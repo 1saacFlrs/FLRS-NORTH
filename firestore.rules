@@ -1,0 +1,87 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Bootstrapped Admin: Only allow User Email from runtime or users in admins collection
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'isaacjaredmorenoflores@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Product Entity
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 8 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.price is number && data.price >= 0 &&
+             data.description is string && data.description.size() <= 5000 &&
+             data.category is string && data.category in ['T-Shirts', 'Hoodies', 'Accessories'] &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() <= 1000 &&
+             data.sizes is list && data.sizes.size() >= 0 && data.sizes.size() <= 10 &&
+             ((data.sizes.size() > 0 && data.sizes[0] is string) || data.sizes.size() == 0) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // Products Collection
+    match /products/{productId} {
+      // Allow public read of products
+      allow get: if isValidId(productId);
+      allow list: if true; // Products are public, anyone can list them
+
+      allow create: if isAdmin() &&
+                       isValidId(productId) &&
+                       isValidProduct(incoming()) &&
+                       incoming().createdAt == request.time &&
+                       incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+                       isValidId(productId) &&
+                       isValidProduct(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt == request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'updatedAt']);
+
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow get: if isAdmin() && isValidId(adminId);
+      allow list: if isAdmin();
+      
+      // Only the bootstrapped super admin can add other admins
+      allow create: if isSignedIn() && request.auth.token.email == 'isaacjaredmorenoflores@gmail.com' &&
+                       isValidId(adminId) && 
+                       incoming().keys().hasAll(['email']) && incoming().keys().size() == 1 &&
+                       incoming().email is string && incoming().email.size() <= 100;
+
+      allow update: if false; // Immutable
+      allow delete: if isSignedIn() && request.auth.token.email == 'isaacjaredmorenoflores@gmail.com' && isValidId(adminId);
+    }
+  }
+}
