@@ -43,13 +43,14 @@ service cloud.firestore {
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'stock', 'stockBySize', 'publishDate', 'offer', 'createdAt', 'updatedAt']) &&
-             data.keys().size() == 12 &&
+      return data.keys().hasAll(['name', 'price', 'description', 'category', 'imageUrl', 'images', 'sizes', 'stock', 'stockBySize', 'publishDate', 'offer', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 13 &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.price is number && data.price >= 0 &&
              data.description is string && data.description.size() <= 5000 &&
              data.category is string && data.category.size() > 0 && data.category.size() <= 64 &&
              data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() <= 2000 &&
+             data.images is list && data.images.size() <= 6 &&
              data.sizes is list && data.sizes.size() >= 0 && data.sizes.size() <= 10 &&
              ((data.sizes.size() > 0 && data.sizes[0] is string) || data.sizes.size() == 0) &&
              data.stock is number && data.stock >= 0 &&
@@ -77,7 +78,7 @@ service cloud.firestore {
                        isValidProduct(incoming()) &&
                        incoming().createdAt == existing().createdAt &&
                        incoming().updatedAt == request.time &&
-                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'stock', 'stockBySize', 'publishDate', 'offer', 'updatedAt']);
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'description', 'category', 'imageUrl', 'images', 'sizes', 'stock', 'stockBySize', 'publishDate', 'offer', 'updatedAt']);
 
       allow delete: if isAdmin() && isValidId(productId);
     }
@@ -101,10 +102,17 @@ service cloud.firestore {
     match /provider/info {
       allow get, list: if true;
       allow create, update, delete: if isAdmin() &&
-                            incoming().keys().hasAll(['email', 'phone', 'city']) &&
-                            incoming().email is string &&
-                            incoming().phone is string &&
-                            incoming().city is string;
+                            incoming().keys().hasAny(['email', 'phone', 'city', 'name']) &&
+                            incoming().get('email', '') is string &&
+                            incoming().get('phone', '') is string &&
+                            incoming().get('city', '') is string &&
+                            incoming().get('name', '') is string;
+    }
+
+    // Social Links
+    match /settings/social {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /admins/{adminId} {

@@ -5,7 +5,7 @@ import { useCartStore } from '../store/useCartStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
-import { ChevronLeft, Heart, HeartOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, HeartOff } from 'lucide-react';
 import { OfferBadge } from '../components/OfferBadge';
 
 export function ProductPage() {
@@ -14,6 +14,7 @@ export function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
   const addItem = useCartStore(state => state.addItem);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
 
@@ -105,12 +106,49 @@ export function ProductPage() {
             {isFav ? <HeartOff className="w-5 h-5" /> : <Heart className="w-5 h-5" />}
           </button>
           <OfferBadge offer={product.offer} />
-          <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 relative">
-            <img 
-              src={product.imageUrl} 
-              alt={product.name} 
-              className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700"
-            />
+          <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 relative group">
+            { (() => {
+              const allImages = [product.imageUrl, ...(product.images || [])];
+              const currentMedia = allImages[activeImageIndex];
+              const isVideo = currentMedia?.match(/\.(mp4|webm|ogg)$/i) || currentMedia?.includes('youtube.com') || currentMedia?.includes('vimeo.com');
+              
+              return isVideo ? (
+                <video src={currentMedia} autoPlay loop muted playsInline className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700" />
+              ) : (
+                <img 
+                  src={currentMedia} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700"
+                />
+              );
+            })() }
+            
+            {/* Slider Controls */}
+            { [product.imageUrl, ...(product.images || [])].length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveImageIndex(prev => prev === 0 ? [product.imageUrl, ...(product.images || [])].length - 1 : prev - 1); }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-white hover:text-black rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveImageIndex(prev => prev === [product.imageUrl, ...(product.images || [])].length - 1 ? 0 : prev + 1); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-white hover:text-black rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {[product.imageUrl, ...(product.images || [])].map((_, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={(e) => { e.stopPropagation(); setActiveImageIndex(idx); }}
+                      className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/70'}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

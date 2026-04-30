@@ -16,11 +16,13 @@ export function Navbar() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await signOut(auth);
-    // Explicitly clear local stores so the next person logging in doesn't see old items
-    useCartStore.getState().clearCart();
-    useFavoritesStore.setState({ items: [] });
-    navigate('/');
+    if (window.confirm("¿Seguro que deseas cerrar sesión? / Are you sure you want to log out?")) {
+      await signOut(auth);
+      // Explicitly clear local stores so the next person logging in doesn't see old items
+      useCartStore.getState().clearCart();
+      useFavoritesStore.setState({ items: [] });
+      navigate('/');
+    }
   };
 
   return (

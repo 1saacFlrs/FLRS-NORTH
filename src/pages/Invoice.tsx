@@ -11,7 +11,7 @@ export function Invoice() {
   const { items: orders } = useOrdersStore();
   const order = orders.find(o => o.id === id);
 
-  const [providerInfo, setProviderInfo] = useState<{ email?: string; phone?: string; city?: string } | null>(null);
+  const [providerInfo, setProviderInfo] = useState<{ name?: string; email?: string; phone?: string; city?: string } | null>(null);
 
   useEffect(() => {
     const fetchProvider = async () => {
@@ -55,6 +55,20 @@ export function Invoice() {
     window.location.href = `mailto:${providerInfo.email}?subject=${subject}&body=${body}`;
   };
 
+  const handleDownloadPDF = async () => {
+    const html2pdf = (await import('html2pdf.js')).default;
+    const element = document.getElementById('invoice-content');
+    if (!element) return;
+    const opt = {
+      margin:       0.5,
+      filename:     `Invoice-${order.id}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-8 py-12 text-white mt-12 md:mt-20">
       
@@ -65,7 +79,7 @@ export function Invoice() {
       </div>
 
       <div className="flex justify-end gap-2 mb-8 print:hidden">
-         <Button onClick={() => window.print()} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs">
+         <Button onClick={handleDownloadPDF} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs">
            <Download className="w-4 h-4 mr-2" /> PDF / Descargar
          </Button>
          <Button onClick={() => window.print()} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs text-white">
@@ -73,7 +87,8 @@ export function Invoice() {
          </Button>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-start mb-12 border-b border-zinc-900 pb-8">
+      <div id="invoice-content" className="bg-black text-white p-2">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-12 border-b border-zinc-900 pb-8">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-[0.2em]">Purchase Invoice</h1>
           <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Order #{order.id.toUpperCase()}</p>
@@ -156,6 +171,12 @@ export function Invoice() {
         {providerInfo ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
             <div className="space-y-4">
+              {providerInfo.name && (
+                <div>
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1 print:text-zinc-500">Provider Name</p>
+                  <p className="text-sm font-medium tracking-widest print:text-black">{providerInfo.name}</p>
+                </div>
+              )}
               {providerInfo.city && (
                 <div>
                   <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1 print:text-zinc-500">Located In</p>
@@ -193,6 +214,7 @@ export function Invoice() {
             Provider information is not available at the moment. Please check back later.
           </div>
         )}
+      </div>
       </div>
 
       <style>{`

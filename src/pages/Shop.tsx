@@ -4,6 +4,8 @@ import { getVisibleProducts, Product } from '../lib/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { ProductCard } from '../components/ProductCard';
+import { Search } from 'lucide-react';
+import { Input } from '../components/ui/input';
 
 export function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -13,6 +15,7 @@ export function Shop() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeSizes, setActiveSizes] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,6 +50,11 @@ export function Shop() {
   useEffect(() => {
     let filtered = products;
 
+    if (searchQuery.trim() !== '') {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(lowerQuery) || p.description.toLowerCase().includes(lowerQuery));
+    }
+
     if (activeCategory !== 'All') {
       filtered = filtered.filter(p => p.category === activeCategory);
     }
@@ -71,6 +79,16 @@ export function Shop() {
       {/* Sidebar Categories */}
       <aside className="w-full md:w-64 md:border-r border-zinc-800 p-8 flex flex-col justify-start">
         <div className="space-y-8 sticky top-28">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Input 
+              type="text" 
+              placeholder="Buscar..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 bg-zinc-900/50 border-zinc-800 text-sm text-white placeholder:text-zinc-500 rounded-none h-10 tracking-widest"
+            />
+          </div>
           <div>
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4">Categories</h3>
             <ul className="space-y-3 text-sm font-light">

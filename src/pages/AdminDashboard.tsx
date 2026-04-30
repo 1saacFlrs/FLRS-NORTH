@@ -39,6 +39,8 @@ export function AdminDashboard() {
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   
+  const [images, setImages] = useState<string[]>([]);
+  
   const [offerActive, setOfferActive] = useState(false);
   const [offerType, setOfferType] = useState<'color' | 'image'>('color');
   const [offerValue, setOfferValue] = useState('#ff0000');
@@ -48,12 +50,17 @@ export function AdminDashboard() {
   const [authChecking, setAuthChecking] = useState(true);
 
   // Tabs
-  const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'provider'>('products');
+  const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'provider' | 'social'>('products');
 
   // Provider Info state
-  const [providerInfo, setProviderInfo] = useState({ email: '', phone: '', city: '' });
+  const [providerInfo, setProviderInfo] = useState({ name: '', email: '', phone: '', city: '' });
   const [isSavingProvider, setIsSavingProvider] = useState(false);
   const [providerSaveMessage, setProviderSaveMessage] = useState('');
+
+  // Social Links state
+  const [socialLinks, setSocialLinks] = useState({ instagram: '', tiktok: '' });
+  const [isSavingSocial, setIsSavingSocial] = useState(false);
+  const [socialSaveMessage, setSocialSaveMessage] = useState('');
 
   // Revoke state
   const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
@@ -99,13 +106,44 @@ export function AdminDashboard() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setProviderInfo({
+          name: data.name || '',
           email: data.email || '',
           phone: data.phone || '',
           city: data.city || ''
         });
       }
+      
+      const socialSnap = await getDoc(doc(db, 'settings', 'social'));
+      if (socialSnap.exists()) {
+        const data = socialSnap.data();
+        setSocialLinks({
+          instagram: data.instagram || '',
+          tiktok: data.tiktok || ''
+        });
+      }
     } catch (err) {
-      console.error('Error fetching provider info', err);
+      console.error('Error fetching provider/social info', err);
+    }
+  };
+
+  const handleSaveSocial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSocial(true);
+    setSocialSaveMessage('');
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db, handleFirestoreError, OperationType } = await import('../lib/firebase');
+      try {
+        await setDoc(doc(db, 'settings', 'social'), socialLinks);
+        setSocialSaveMessage('Social links saved successfully!');
+        setTimeout(() => setSocialSaveMessage(''), 3000);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'settings');
+      }
+    } catch (err: any) {
+      setSocialSaveMessage('Error saving social links: ' + err.message);
+    } finally {
+      setIsSavingSocial(false);
     }
   };
 
@@ -154,7 +192,9 @@ export function AdminDashboard() {
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (window.confirm("¿Seguro que deseas cerrar sesión del panel de administrador?")) {
+      await signOut(auth);
+    }
   };
 
   const openAddModal = () => {
@@ -173,6 +213,7 @@ export function AdminDashboard() {
     setPublishDate('');
     setImageUrl('');
     setImageFile(null);
+    setImages([]);
     setOfferActive(false);
     setOfferType('color');
     setOfferValue('#ffffff');
@@ -209,6 +250,7 @@ export function AdminDashboard() {
     }
     setImageUrl(p.imageUrl);
     setImageFile(null);
+    setImages(p.images || []);
     
     if (p.offer) {
       setOfferActive(p.offer.active);
@@ -299,11 +341,13 @@ export function AdminDashboard() {
     const totalStock = Object.values(cleanStockBySize).reduce((sum, val) => sum + val, 0);
 
     // Capture state to pass into async closure
+    const filteredImages = images.filter(img => img.trim() !== '');
     const dataToSave = {
       name,
       price: parseFloat(price),
       description,
       category,
+      images: filteredImages,
       sizes: activeSizes,
       stock: totalStock,
       stockBySize: cleanStockBySize,
@@ -542,7 +586,63 @@ export function AdminDashboard() {
         >
           Provider Info
         </button>
+        <button
+          onClick={() => setActiveAdminTab('social')}
+          className={`pb-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors border-b-2 ${
+            activeAdminTab === 'social' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'
+          }`}
+        >
+          Social Links
+        </button>
       </div>
+
+      {activeAdminTab === 'social' && (
+        <div className="max-w-2xl">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2">Social Links</h2>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest leading-relaxed">
+              Manage the links for the social media icons in the footer.
+            </p>
+          </div>
+
+          {socialSaveMessage && (
+            <div className={`mb-6 p-4 text-xs font-bold uppercase tracking-widest border ${socialSaveMessage.includes('Error') ? 'bg-red-950/20 border-red-900/50 text-red-400' : 'bg-green-950/20 border-green-900/50 text-green-400'}`}>
+              {socialSaveMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSaveSocial} className="space-y-6 bg-zinc-900/30 border border-zinc-800 p-8">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Instagram URL</label>
+              <Input 
+                type="url" 
+                value={socialLinks.instagram} 
+                onChange={e => setSocialLinks({...socialLinks, instagram: e.target.value})} 
+                placeholder="https://instagram.com/..."
+                className="bg-black border-zinc-800 text-white" 
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">TikTok URL</label>
+              <Input 
+                type="url" 
+                value={socialLinks.tiktok} 
+                onChange={e => setSocialLinks({...socialLinks, tiktok: e.target.value})} 
+                placeholder="https://tiktok.com/@..."
+                className="bg-black border-zinc-800 text-white" 
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={isSavingSocial}
+              className="w-full h-12 rounded-none bg-white text-black hover:bg-zinc-200 tracking-widest uppercase text-xs font-bold mt-4"
+            >
+              {isSavingSocial ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </form>
+        </div>
+      )}
 
       {activeAdminTab === 'products' && (
         <>
@@ -615,6 +715,17 @@ export function AdminDashboard() {
           )}
 
           <form onSubmit={handleSaveProvider} className="space-y-6 bg-zinc-900/30 border border-zinc-800 p-8">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Provider Name</label>
+              <Input 
+                type="text" 
+                required 
+                value={providerInfo.name} 
+                onChange={e => setProviderInfo({...providerInfo, name: e.target.value})} 
+                placeholder="Business Name"
+                className="bg-black border-zinc-800 text-white" 
+              />
+            </div>
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Email Address</label>
               <Input 
@@ -839,8 +950,26 @@ export function AdminDashboard() {
                         value={imageUrl} 
                         onChange={e => setImageUrl(e.target.value)} 
                         placeholder="https://..." 
-                        className="bg-black border-zinc-800 text-zinc-300 text-xs"
+                        className="bg-black border-zinc-800 text-zinc-300 text-xs mb-4"
                       />
+                      
+                      <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2 font-bold mt-4 border-t border-zinc-800 pt-4">Extra Images/Videos (Slices - Max 6)</div>
+                      <div className="space-y-2 mt-2">
+                       {[0, 1, 2, 3, 4, 5].map((index) => (
+                         <Input 
+                           key={index}
+                           type="text" 
+                           value={images[index] || ''} 
+                           onChange={(e) => {
+                             const newImages = [...images];
+                             newImages[index] = e.target.value;
+                             setImages(newImages);
+                           }}
+                           placeholder={`Slice ${index + 1} URL (Image or MP4)`}
+                           className="bg-black border-zinc-800 text-zinc-300 text-xs" 
+                         />
+                       ))}
+                      </div>
                     </div>
                   </div>
                 </div>
