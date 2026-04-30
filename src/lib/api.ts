@@ -58,14 +58,11 @@ export const getCategories = async (): Promise<Category[]> => {
 };
 
 export const addCategory = async (name: string) => {
-  const docRef = doc(collection(db, 'categories'));
-  const id = docRef.id;
-  await setDoc(docRef, {
-    id,
+  const docRef = await addDoc(collection(db, 'categories'), {
     name,
     createdAt: serverTimestamp()
   });
-  return id;
+  return docRef.id;
 };
 
 export const deleteCategory = async (id: string) => {
@@ -113,12 +110,27 @@ export const uploadImage = async (file: File): Promise<string> => {
 };
 
 export const uploadImageResumable = (file: File) => {
-  const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+  // Clean filename to prevent issues
+  const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
+  const storageRef = ref(storage, `products/${Date.now()}_${safeName}`);
   const uploadTask = uploadBytesResumable(storageRef, file);
 
-  const getUrl = async () => {
-    await uploadTask;
-    return await getDownloadURL(storageRef);
+  const getUrl = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        null,
+        (error) => reject(error),
+        async () => {
+          try {
+            const url = await getDownloadURL(storageRef);
+            resolve(url);
+          } catch (e) {
+            reject(e);
+          }
+        }
+      );
+    });
   };
 
   return { uploadTask, getUrl };

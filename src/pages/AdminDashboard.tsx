@@ -348,12 +348,17 @@ export function AdminDashboard() {
       </div>
 
       {/* Running Processes */}
-      {processes.length > 0 && (
-        <div className="mb-12">
-          <div className="flex justify-between items-center mb-6">
-             <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Background Tasks</h2>
-             <Button variant="outline" size="sm" onClick={clearCompleted} className="rounded-none border-zinc-800 text-zinc-400 hover:text-white uppercase tracking-widest text-[10px]">Clear Completed</Button>
-          </div>
+      <div className="mb-12">
+        <div className="flex justify-between items-center mb-6">
+           <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Background Tasks</h2>
+           <Button variant="outline" size="sm" onClick={clearCompleted} disabled={processes.length === 0} className="rounded-none border-zinc-800 text-zinc-400 hover:text-white uppercase tracking-widest text-[10px] disabled:opacity-50">Clear Completed</Button>
+        </div>
+        
+        {processes.length === 0 ? (
+           <div className="text-zinc-600 text-xs uppercase tracking-widest p-6 text-center border border-zinc-800 border-dashed bg-zinc-900/10">
+              No active or recent tasks.
+           </div>
+        ) : (
           <div className="space-y-4">
              {processes.map((proc) => (
                 <div key={proc.id} className="bg-zinc-900 border border-zinc-800 p-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
@@ -370,7 +375,7 @@ export function AdminDashboard() {
                       </div>
                       {proc.progress !== undefined && proc.status === 'running' && (
                          <div className="w-full bg-zinc-950 h-1 mt-3">
-                            <div className="bg-white h-1 transition-all duration-300" style={{ width: `${proc.progress}%` }}></div>
+                            <div className="bg-white h-1 transition-all duration-300" style={{ width: `${Math.max(2, proc.progress)}%` }}></div>
                          </div>
                       )}
                    </div>
@@ -382,8 +387,8 @@ export function AdminDashboard() {
                 </div>
              ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Products</h2>

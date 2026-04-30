@@ -82,8 +82,8 @@ service cloud.firestore {
 
     // Categories Collection
     function isValidCategory(data) {
-       return data.keys().hasAll(['id', 'name', 'createdAt']) &&
-              data.id is string && data.id.size() <= 128 &&
+       return data.keys().hasAll(['name', 'createdAt']) &&
+              data.keys().size() == 2 &&
               data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
               data.createdAt is timestamp;
     }
