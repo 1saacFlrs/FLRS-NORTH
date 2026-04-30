@@ -287,12 +287,7 @@ export function Profile() {
                             
                             <Button 
                               onClick={() => {
-                                const newWindow = window.open(`/invoice/${order.id}`, '_blank');
-                                if (newWindow) {
-                                  newWindow.onload = () => {
-                                    newWindow.print();
-                                  };
-                                }
+                                navigate(`/invoice/${order.id}?print=true`);
                               }}
                               className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-zinc-800 text-white hover:bg-zinc-700 h-8 rounded-none border border-transparent"
                             >

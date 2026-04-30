@@ -28,6 +28,12 @@ export function Invoice() {
     fetchProvider();
   }, []);
 
+  useEffect(() => {
+    if (window.location.search.includes('print=true')) {
+      setTimeout(() => window.print(), 800);
+    }
+  }, []);
+
   if (!order) {
     return (
       <div className="max-w-7xl mx-auto px-8 py-24 text-center mt-20">
@@ -61,15 +67,78 @@ export function Invoice() {
     setIsDownloading(true);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
-      const element = document.getElementById('invoice-content');
-      if (!element) return;
+      
+      const itemsHtml = order.items.map(item => `
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+          <div>
+            <h4 style="margin: 0; font-size: 14px;">${item.name}</h4>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: #666;">Size: ${item.size} | Qty: ${item.quantity}</p>
+          </div>
+          <div style="text-align: right; font-weight: bold; font-size: 14px;">
+            $${(item.price * item.quantity).toFixed(2)} MXN
+          </div>
+        </div>
+      `).join('');
+
+      const invoiceHTML = `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #000; background: #fff; max-width: 800px; margin: 0 auto;">
+          <div style="border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">Purchase Invoice</h1>
+            <p style="margin: 10px 0 0 0; color: #555; text-transform: uppercase;">Order #<strong>${order.id.toUpperCase()}</strong></p>
+            <p style="margin: 5px 0 0 0; color: #777; font-size: 12px;">Date: ${new Date(order.createdAt).toLocaleString()}</p>
+          </div>
+          
+          <div style="margin-bottom: 40px; display: flex; justify-content: space-between;">
+            <div style="width: 48%; background: #f9f9f9; padding: 15px; border: 1px solid #eee;">
+              <h3 style="margin-top: 0; font-size: 12px; text-transform: uppercase; color: #555;">Customer Details</h3>
+              ${order.customerData ? `
+                <p style="margin: 0; font-weight: bold;">${order.customerData.fullName}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px;">${order.customerData.email}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px;">${order.customerData.phone}</p>
+              ` : '<p>N/A</p>'}
+            </div>
+            <div style="width: 48%; background: #f9f9f9; padding: 15px; border: 1px solid #eee;">
+              <h3 style="margin-top: 0; font-size: 12px; text-transform: uppercase; color: #555;">Shipping Address</h3>
+              ${order.customerData && order.customerData.address ? `
+                <p style="margin: 0; font-size: 13px;">${order.customerData.address} ${order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #555;">${order.customerData.city}, ${order.customerData.state} ${order.customerData.zipCode}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #555;">${order.customerData.country}</p>
+              ` : '<p style="font-size: 12px; color: #888;">No shipping details</p>'}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 40px;">
+            <h3 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">Order Items</h3>
+            ${itemsHtml}
+            <div style="text-align: right; margin-top: 20px;">
+              <p style="margin: 0; font-size: 12px; text-transform: uppercase; color: #555;">Subtotal: $${order.total.toFixed(2)} MXN</p>
+              <p style="margin: 5px 0 10px 0; font-size: 12px; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px;">Shipping: TBD</p>
+              <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">Total: $${order.total.toFixed(2)} MXN</h2>
+            </div>
+          </div>
+          
+          <div style="background: #fdfdfd; border: 1px solid #eaeaea; padding: 20px;">
+            <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase;">Provider Information</h3>
+            <p style="margin: 0 0 15px 0; font-size: 11px; color: #666;">Please contact the provider with this invoice to proceed with payment and shipping.</p>
+            ${providerInfo ? `
+               <p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Name:</strong> ${providerInfo.name || 'N/A'}</p>
+               <p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Phone/WA:</strong> ${providerInfo.phone || 'N/A'}</p>
+               <p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Email:</strong> ${providerInfo.email || 'N/A'}</p>
+            ` : '<p style="font-size: 12px;">Not available</p>'}
+          </div>
+        </div>
+      `;
+
       const opt = {
-        margin:       0.5,
+        margin:       10, // px or mm depending on unit
         filename:     `Invoice-${order.id}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
+      
+      const element = document.createElement('div');
+      element.innerHTML = invoiceHTML;
       await html2pdf().set(opt).from(element).save();
     } catch (err) {
       console.error("Error generating PDF", err);
