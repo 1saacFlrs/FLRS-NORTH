@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getProducts, addProduct, updateProduct, deleteProduct, uploadImageResumable, Product } from '../lib/api';
 import { useProcessStore } from '../store/useProcessStore';
 import { Button } from '../components/ui/button';
@@ -11,6 +12,7 @@ const PREDEFINED_CATEGORIES = ['T-Shirts', 'Hoodies', 'Sweaters', 'Jackets', 'Pa
 const PREDEFINED_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -356,7 +358,7 @@ export function AdminDashboard() {
           </form>
           <div className="mt-8 text-center">
             <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-2 border-t border-zinc-800 pt-6">Not an admin?</p>
-            <a href="/apply-admin" className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest border-b border-zinc-600 hover:border-white transition-colors pb-0.5">Apply for Access</a>
+            <button type="button" onClick={() => navigate('/apply-admin')} className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest border-b border-zinc-600 hover:border-white transition-colors pb-0.5">Apply for Access</button>
           </div>
         </div>
       </div>
@@ -375,7 +377,7 @@ export function AdminDashboard() {
              This section is restricted to authorized personnel. If you have an admin code, you can upgrade your account.
            </p>
            <div className="space-y-4">
-             <Button onClick={() => window.location.href = '/apply-admin'} className="w-full h-12 rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">
+             <Button onClick={() => navigate('/apply-admin')} className="w-full h-12 rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">
                Enter Access Code
              </Button>
              <Button variant="outline" onClick={handleLogout} className="w-full h-12 rounded-none tracking-widest uppercase border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 relative z-10">
