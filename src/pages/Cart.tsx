@@ -1,34 +1,72 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
 import { Button } from '../components/ui/button';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Trash2, Plus, Minus, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useOrdersStore } from '../store/useOrdersStore';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export function Cart() {
   const { items, removeItem, updateQuantity, getCartTotal, clearCart } = useCartStore();
   const { user } = useAuthStore();
   const { addOrder } = useOrdersStore();
   const navigate = useNavigate();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!user) {
       alert("Please log in to checkout");
       navigate('/login');
       return;
     }
 
-    const order = {
-      id: Math.random().toString(36).substr(2, 9),
-      items: [...items],
-      total: getCartTotal(),
-      status: 'processing' as const,
-      createdAt: new Date().toISOString()
-    };
+    setIsCheckingOut(true);
 
-    addOrder(order);
-    clearCart();
-    navigate(`/invoice/${order.id}`);
+    try {
+      let customerData: any = {
+        email: user.email || '',
+        phone: '',
+        fullName: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: ''
+      };
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.phoneNumber) customerData.phone = data.phoneNumber;
+          if (data.shippingInfo) {
+            customerData = {
+              ...customerData,
+              ...data.shippingInfo
+            };
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user data", err);
+      }
+
+      const order = {
+        id: Math.random().toString(36).substr(2, 9),
+        items: [...items],
+        total: getCartTotal(),
+        status: 'processing' as const,
+        createdAt: new Date().toISOString(),
+        customerData
+      };
+
+      addOrder(order);
+      clearCart();
+      navigate(`/invoice/${order.id}`);
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   if (items.length === 0) {
@@ -115,10 +153,12 @@ export function Cart() {
             </div>
             <Button 
               onClick={handleCheckout}
+              disabled={isCheckingOut}
               size="lg" 
               className="w-full py-6 rounded-none bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-xs font-bold"
             >
-              Checkout
+              {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {isCheckingOut ? 'Processing...' : 'Checkout'}
             </Button>
           </div>
         </div>

@@ -37,6 +37,16 @@ export interface Order {
   total: number;
   status: 'processing' | 'shipped' | 'delivered';
   createdAt: string;
+  customerData?: {
+    email: string;
+    phone: string;
+    fullName: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
 }
 
 export interface UserProfile {

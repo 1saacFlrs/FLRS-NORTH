@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useOrdersStore } from '../store/useOrdersStore';
 import { Button } from '../components/ui/button';
-import { Building2, MessageCircle, Mail } from 'lucide-react';
+import { Building2, MessageCircle, Mail, Printer } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -56,7 +56,13 @@ export function Invoice() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-8 py-12 text-white mt-20">
+    <div className="max-w-4xl mx-auto px-8 py-12 text-white mt-12 md:mt-20">
+      <div className="flex justify-end mb-4 print:hidden">
+         <Button onClick={() => window.print()} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs">
+           <Printer className="w-4 h-4 mr-2" /> Print / Save PDF
+         </Button>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start mb-12 border-b border-zinc-900 pb-8">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-[0.2em]">Purchase Invoice</h1>
@@ -64,9 +70,32 @@ export function Invoice() {
         </div>
         <div className="mt-4 md:mt-0 text-left md:text-right">
           <p className="text-zinc-500 uppercase tracking-[0.2em] text-[10px] mb-1">Date</p>
-          <p className="font-mono text-sm">{new Date(order.createdAt).toLocaleDateString()}</p>
+          <p className="font-mono text-sm">{new Date(order.createdAt).toLocaleString()}</p>
         </div>
       </div>
+
+      {order.customerData && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="bg-zinc-950 border border-zinc-900 p-6">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Customer Details</h2>
+            {order.customerData.fullName && <p className="text-sm font-medium tracking-widest uppercase mb-1">{order.customerData.fullName}</p>}
+            {order.customerData.email && <p className="text-xs tracking-widest text-zinc-400 mb-1">{order.customerData.email}</p>}
+            {order.customerData.phone && <p className="text-xs tracking-widest text-zinc-400">{order.customerData.phone}</p>}
+          </div>
+          <div className="bg-zinc-950 border border-zinc-900 p-6">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Shipping Address</h2>
+            {order.customerData.address ? (
+              <>
+                <p className="text-xs tracking-widest text-zinc-300 mb-1">{order.customerData.address}</p>
+                <p className="text-xs tracking-widest text-zinc-400">{order.customerData.city}, {order.customerData.state} {order.customerData.zipCode}</p>
+                <p className="text-xs tracking-widest text-zinc-400 mt-1">{order.customerData.country}</p>
+              </>
+            ) : (
+              <p className="text-xs tracking-widest text-zinc-600 italic">No shipping details provided</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-zinc-900/30 border border-zinc-800 p-8 mb-12">
         <h2 className="text-xs font-bold uppercase tracking-[0.2em] mb-6 text-zinc-400">Order Items</h2>
@@ -109,33 +138,33 @@ export function Invoice() {
         <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
           <Building2 className="w-5 h-5 text-zinc-500" /> Provider Information
         </h2>
-        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-8 leading-relaxed max-w-2xl">
+        <p className="text-xs text-zinc-400 uppercase tracking-widest mb-8 leading-relaxed max-w-2xl print:text-black">
           To finalize your purchase and arrange for shipping, please contact the provider directly using your preferred method below, sharing this invoice details.
         </p>
 
         {providerInfo ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2">
             <div className="space-y-4">
               {providerInfo.city && (
                 <div>
-                  <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">Located In</p>
-                  <p className="text-sm font-medium tracking-widest">{providerInfo.city}</p>
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1 print:text-zinc-500">Located In</p>
+                  <p className="text-sm font-medium tracking-widest print:text-black">{providerInfo.city}</p>
                 </div>
               )}
               {providerInfo.phone && (
                 <div>
-                   <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">WhatsApp / Phone</p>
-                   <p className="text-sm font-medium tracking-widest">{providerInfo.phone}</p>
+                   <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1 print:text-zinc-500">WhatsApp / Phone</p>
+                   <p className="text-sm font-medium tracking-widest print:text-black">{providerInfo.phone}</p>
                 </div>
               )}
               {providerInfo.email && (
                 <div>
-                  <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">Email</p>
-                  <p className="text-sm font-medium tracking-widest">{providerInfo.email}</p>
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1 print:text-zinc-500">Email</p>
+                  <p className="text-sm font-medium tracking-widest print:text-black">{providerInfo.email}</p>
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-4 justify-end">
+            <div className="flex flex-col gap-4 justify-end print:hidden">
                {providerInfo.phone && (
                  <Button onClick={handleWhatsApp} className="w-full rounded-none tracking-widest uppercase bg-[#25D366] text-black hover:bg-[#20b858] h-12 flex items-center justify-center gap-2">
                    <MessageCircle className="w-4 h-4" /> Message on WhatsApp
@@ -154,6 +183,25 @@ export function Invoice() {
           </div>
         )}
       </div>
+
+      <style>{`
+        @media print {
+          body {
+            background-color: white !important;
+            color: black !important;
+          }
+          .print\\:text-black { color: black !important; }
+          .print\\:bg-white { background-color: white !important; }
+          .print\\:border-black { border-color: black !important; }
+          
+          /* Override background colors for print */
+          .bg-black, .bg-zinc-950, .bg-zinc-900, .bg-zinc-900\\/30 { background-color: white !important; color: black !important; }
+          .text-white { color: black !important; }
+          .text-zinc-300, .text-zinc-400 { color: #333 !important; }
+          .text-zinc-500, .text-zinc-600 { color: #666 !important; }
+          .border-zinc-800, .border-zinc-900, .border-zinc-800\\/50 { border-color: #ddd !important; }
+        }
+      `}</style>
     </div>
   );
 }
