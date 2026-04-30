@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
-import { User, MapPin, Package, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, MapPin, Package, Phone, CheckCircle2, AlertCircle, Trash2, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useOrdersStore } from '../store/useOrdersStore';
 
@@ -33,7 +33,7 @@ export function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const { items: orders } = useOrdersStore();
+  const { items: orders, removeOrder } = useOrdersStore();
 
   useEffect(() => {
     if (!user) {
@@ -297,6 +297,26 @@ export function Profile() {
                               <Package className="w-3 h-3 mr-1" />
                               {order.status}
                             </span>
+                          </div>
+                          
+                          <div className="flex gap-2 w-full md:w-auto md:ml-auto">
+                            <Button 
+                              onClick={() => navigate(`/invoice/${order.id}`)}
+                              className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-white text-black hover:bg-zinc-200 h-8 rounded-none border border-transparent"
+                            >
+                              <FileText className="w-3 h-3 mr-1" /> Invoice
+                            </Button>
+                            
+                            <Button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to cancel this order?')) {
+                                  removeOrder(order.id);
+                                }
+                              }}
+                              className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-black text-red-500 hover:text-red-400 hover:bg-zinc-900 border border-zinc-800 hover:border-red-900 h-8 rounded-none"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" /> Cancel
+                            </Button>
                           </div>
                         </div>
                         

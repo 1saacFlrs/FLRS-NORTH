@@ -9,6 +9,7 @@ import { Home } from './pages/Home';
 import { Shop } from './pages/Shop';
 import { ProductPage } from './pages/ProductPage';
 import { Cart } from './pages/Cart';
+import { Invoice } from './pages/Invoice';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Favorites } from './pages/Favorites';
 import { Login } from './pages/Login';
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/invoice/:id" element={<Invoice />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/apply-admin" element={<ApplyAdmin />} />
           <Route path="/favorites" element={<Favorites />} />

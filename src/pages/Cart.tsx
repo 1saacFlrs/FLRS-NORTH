@@ -28,7 +28,7 @@ export function Cart() {
 
     addOrder(order);
     clearCart();
-    navigate('/profile');
+    navigate(`/invoice/${order.id}`);
   };
 
   if (items.length === 0) {

@@ -47,6 +47,14 @@ export function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
 
+  // Tabs
+  const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'provider'>('products');
+
+  // Provider Info state
+  const [providerInfo, setProviderInfo] = useState({ email: '', phone: '', city: '' });
+  const [isSavingProvider, setIsSavingProvider] = useState(false);
+  const [providerSaveMessage, setProviderSaveMessage] = useState('');
+
   // Revoke state
   const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
   const [revokeConfirmText, setRevokeConfirmText] = useState('');
@@ -79,8 +87,49 @@ export function AdminDashboard() {
   useEffect(() => {
     if (user && isAdmin) {
       fetchProducts();
+      fetchProviderInfo();
     }
   }, [user, isAdmin]);
+
+  const fetchProviderInfo = async () => {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
+      const docSnap = await getDoc(doc(db, 'provider', 'info'));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setProviderInfo({
+          email: data.email || '',
+          phone: data.phone || '',
+          city: data.city || ''
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching provider info', err);
+    }
+  };
+
+  const handleSaveProvider = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProvider(true);
+    setProviderSaveMessage('');
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db, handleFirestoreError, OperationType } = await import('../lib/firebase');
+      try {
+        await setDoc(doc(db, 'provider', 'info'), providerInfo);
+        setProviderSaveMessage('Provider info saved successfully!');
+        setTimeout(() => setProviderSaveMessage(''), 3000);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'provider');
+      }
+    } catch (err) {
+      console.error(err);
+      setProviderSaveMessage('Error saving provider info.');
+    } finally {
+      setIsSavingProvider(false);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -475,56 +524,138 @@ export function AdminDashboard() {
         )}
       </div>
 
-      <div className="mb-6 flex justify-between items-center">
-        <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Products</h2>
-        <Button onClick={openAddModal} className="rounded-none tracking-widest text-[10px] uppercase bg-white text-black hover:bg-zinc-200">
-          <Plus className="w-3 h-3 mr-2" /> Add Product
-        </Button>
+      {/* Tabs */}
+      <div className="flex justify-start space-x-8 mb-8 border-b border-zinc-800">
+        <button
+          onClick={() => setActiveAdminTab('products')}
+          className={`pb-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors border-b-2 ${
+            activeAdminTab === 'products' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'
+          }`}
+        >
+          Products
+        </button>
+        <button
+          onClick={() => setActiveAdminTab('provider')}
+          className={`pb-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors border-b-2 ${
+            activeAdminTab === 'provider' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'
+          }`}
+        >
+          Provider Info
+        </button>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-zinc-500 text-xs uppercase tracking-widest">Loading products...</div>
-      ) : (
-        <div className="bg-black border border-zinc-900 overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-zinc-900 border-b border-zinc-800 uppercase tracking-widest text-[10px] text-zinc-500">
-              <tr>
-                <th className="px-6 py-4 font-medium">Product</th>
-                <th className="px-6 py-4 font-medium">Category</th>
-                <th className="px-6 py-4 font-medium">Price</th>
-                <th className="px-6 py-4 font-medium">Stock</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-900">
-              {products.map(p => (
-                <tr key={p.id} className="hover:bg-zinc-900/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 flex-shrink-0 bg-zinc-900 mr-4 border border-zinc-800">
-                        <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover grayscale" />
-                      </div>
-                      <div className="font-medium text-sm tracking-wider uppercase">{p.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-zinc-500 text-xs uppercase tracking-widest">{p.category}</td>
-                  <td className="px-6 py-4 font-bold text-zinc-300 text-sm">${p.price}</td>
-                  <td className="px-6 py-4 text-xs font-mono text-zinc-400">{p.stock || 0} left</td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <Button onClick={() => openEditModal(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-400 hover:text-white">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button onClick={() => handleDelete(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-600 hover:text-red-500 hover:border-red-900">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {products.length === 0 && (
-            <div className="p-8 text-center text-zinc-600 text-xs uppercase tracking-widest">No products found. Add one to get started.</div>
+      {activeAdminTab === 'products' && (
+        <>
+          <div className="mb-6 flex justify-between items-center">
+            <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Products</h2>
+            <Button onClick={openAddModal} className="rounded-none tracking-widest text-[10px] uppercase bg-white text-black hover:bg-zinc-200">
+              <Plus className="w-3 h-3 mr-2" /> Add Product
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12 text-zinc-500 text-xs uppercase tracking-widest">Loading products...</div>
+          ) : (
+            <div className="bg-black border border-zinc-900 overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-zinc-900 border-b border-zinc-800 uppercase tracking-widest text-[10px] text-zinc-500">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Product</th>
+                    <th className="px-6 py-4 font-medium">Category</th>
+                    <th className="px-6 py-4 font-medium">Price</th>
+                    <th className="px-6 py-4 font-medium">Stock</th>
+                    <th className="px-6 py-4 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-900">
+                  {products.map(p => (
+                    <tr key={p.id} className="hover:bg-zinc-900/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 flex-shrink-0 bg-zinc-900 mr-4 border border-zinc-800">
+                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover grayscale" />
+                          </div>
+                          <div className="font-medium text-sm tracking-wider uppercase">{p.name}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-zinc-500 text-xs uppercase tracking-widest">{p.category}</td>
+                      <td className="px-6 py-4 font-bold text-zinc-300 text-sm">${p.price}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-zinc-400">{p.stock || 0} left</td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <Button onClick={() => openEditModal(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-400 hover:text-white">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button onClick={() => handleDelete(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-600 hover:text-red-500 hover:border-red-900">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {products.length === 0 && (
+                <div className="p-8 text-center text-zinc-600 text-xs uppercase tracking-widest">No products found. Add one to get started.</div>
+              )}
+            </div>
           )}
+        </>
+      )}
+
+      {activeAdminTab === 'provider' && (
+        <div className="max-w-xl">
+          <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-6">Provider Information</h2>
+          <p className="text-xs text-zinc-400 uppercase tracking-widest mb-8 leading-relaxed">
+            Update your business contact details. This information will be shared with customers on their invoices so they can contact you to proceed with their purchase.
+          </p>
+
+          {providerSaveMessage && (
+            <div className={`mb-6 p-4 text-xs font-bold uppercase tracking-widest border ${providerSaveMessage.includes('Error') ? 'bg-red-950/20 border-red-900/50 text-red-400' : 'bg-green-950/20 border-green-900/50 text-green-400'}`}>
+              {providerSaveMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProvider} className="space-y-6 bg-zinc-900/30 border border-zinc-800 p-8">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Email Address</label>
+              <Input 
+                type="email" 
+                required 
+                value={providerInfo.email} 
+                onChange={e => setProviderInfo({...providerInfo, email: e.target.value})} 
+                placeholder="store@example.com"
+                className="bg-black border-zinc-800 text-white" 
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">WhatsApp / Phone Number</label>
+              <Input 
+                type="tel" 
+                required 
+                value={providerInfo.phone} 
+                onChange={e => setProviderInfo({...providerInfo, phone: e.target.value})} 
+                placeholder="+1 555 123 4567"
+                className="bg-black border-zinc-800 text-white" 
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">City & Country</label>
+              <Input 
+                type="text" 
+                required 
+                value={providerInfo.city} 
+                onChange={e => setProviderInfo({...providerInfo, city: e.target.value})} 
+                placeholder="New York, USA"
+                className="bg-black border-zinc-800 text-white" 
+              />
+            </div>
+            
+            <div className="pt-4">
+              <Button type="submit" disabled={isSavingProvider} className="w-full h-12 rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">
+                {isSavingProvider ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {isSavingProvider ? 'Saving...' : 'Save Provider Info'}
+              </Button>
+            </div>
+          </form>
         </div>
       )}
 

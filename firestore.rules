@@ -97,7 +97,16 @@ service cloud.firestore {
        allow delete: if isAdmin() && isValidId(categoryId);
     }
 
-    // Admins Collection
+    // Provider Info
+    match /provider/info {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin() &&
+                            incoming().keys().hasAll(['email', 'phone', 'city']) &&
+                            incoming().email is string &&
+                            incoming().phone is string &&
+                            incoming().city is string;
+    }
+
     match /admins/{adminId} {
       allow get: if (isAdmin() || (isSignedIn() && request.auth.uid == adminId)) && isValidId(adminId);
       allow list: if isAdmin();
