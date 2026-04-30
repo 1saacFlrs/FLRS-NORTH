@@ -47,6 +47,11 @@ export function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
 
+  // Revoke state
+  const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
+  const [revokeConfirmText, setRevokeConfirmText] = useState('');
+  const [isRevoking, setIsRevoking] = useState(false);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -188,6 +193,28 @@ export function AdminDashboard() {
         updateProcess(processId, { status: 'error', message: err.message });
         alert("Failed to delete: " + err.message);
       }
+    }
+  };
+
+  const handleRevokeAccess = async () => {
+    if (!user) return;
+    setIsRevoking(true);
+    try {
+      const { doc, deleteDoc } = await import('firebase/firestore');
+      const { db, handleFirestoreError, OperationType } = await import('../lib/firebase');
+      try {
+        await deleteDoc(doc(db, 'admins', user.uid));
+        setIsAdmin(false);
+        setIsRevokeModalOpen(false);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, 'admins');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error revoking access. Make sure you are an authorized admin.');
+    } finally {
+      setIsRevoking(false);
+      setRevokeConfirmText('');
     }
   };
 
@@ -380,7 +407,10 @@ export function AdminDashboard() {
              <Button onClick={() => navigate('/apply-admin')} className="w-full h-12 rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">
                Enter Access Code
              </Button>
-             <Button variant="outline" onClick={handleLogout} className="w-full h-12 rounded-none tracking-widest uppercase border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 relative z-10">
+             <Button variant="outline" onClick={() => navigate('/')} className="w-full h-12 rounded-none tracking-widest uppercase border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 relative z-10">
+               Return to Home
+             </Button>
+             <Button variant="ghost" onClick={handleLogout} className="w-full h-12 rounded-none tracking-widest uppercase text-zinc-500 hover:text-white hover:bg-transparent relative z-10">
                Sign Out
              </Button>
            </div>
@@ -495,6 +525,55 @@ export function AdminDashboard() {
           {products.length === 0 && (
             <div className="p-8 text-center text-zinc-600 text-xs uppercase tracking-widest">No products found. Add one to get started.</div>
           )}
+        </div>
+      )}
+
+      {/* Account Privileges */}
+      <div className="mt-12 mb-6 flex justify-between items-center bg-black">
+        <h2 className="text-xl font-bold uppercase tracking-[0.2em] text-red-500">Danger Zone</h2>
+      </div>
+      <div className="bg-red-950/10 border border-red-900/30 p-6 md:p-8 flex flex-col md:flex-row justify-between md:items-center gap-6 mb-12">
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-widest text-red-400 mb-2">Revoke Admin Access</h3>
+          <p className="text-xs text-zinc-500 uppercase tracking-widest max-w-md leading-relaxed">
+            Lower your account privileges back to a standard client role. You will immediately lose access to this dashboard and all administrative tools.
+          </p>
+        </div>
+        <Button onClick={() => setIsRevokeModalOpen(true)} variant="outline" className="rounded-none uppercase tracking-widest text-[10px] text-red-500 border-red-900 hover:bg-red-950 hover:text-red-400 w-full md:w-auto">
+          Revoke Privileges
+        </Button>
+      </div>
+
+      {/* Revoke Modal */}
+      {isRevokeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-black border border-red-900/50 w-full max-w-md text-white shadow-2xl p-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-900"></div>
+            <h3 className="text-xl font-bold uppercase tracking-[0.2em] text-red-500 mb-4">Confirm Action</h3>
+            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-6 leading-relaxed">
+              To confirm that you want to lower your account level, please type <strong className="text-white">REVOKE</strong> below.
+            </p>
+            <div className="mb-6">
+              <Input 
+                value={revokeConfirmText}
+                onChange={e => setRevokeConfirmText(e.target.value)}
+                placeholder="Type REVOKE" 
+                className="bg-zinc-900 border-zinc-800 text-white text-center tracking-widest uppercase font-bold focus-visible:ring-red-900"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button onClick={() => setIsRevokeModalOpen(false)} variant="outline" className="flex-1 rounded-none uppercase text-[10px] tracking-widest border-zinc-800 hover:bg-zinc-900 text-zinc-300 hover:text-white h-12">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRevokeAccess} 
+                disabled={revokeConfirmText !== 'REVOKE' || isRevoking}
+                className="flex-1 rounded-none uppercase tracking-widest text-[10px] bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 h-12"
+              >
+                {isRevoking ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : 'Confirm'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
