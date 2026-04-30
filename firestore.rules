@@ -99,7 +99,7 @@ service cloud.firestore {
 
     // Admins Collection
     match /admins/{adminId} {
-      allow get: if isAdmin() && isValidId(adminId);
+      allow get: if (isAdmin() || (isSignedIn() && request.auth.uid == adminId)) && isValidId(adminId);
       allow list: if isAdmin();
       
       // Allow user to upgrade themselves if they provide the secret access code
