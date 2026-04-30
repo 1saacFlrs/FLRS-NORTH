@@ -35,6 +35,7 @@ export function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white"
+            translate="no"
           >
             For Life, Real Style
           </motion.h2>

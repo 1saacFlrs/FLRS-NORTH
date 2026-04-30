@@ -679,7 +679,7 @@ export function AdminDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-zinc-500 text-xs uppercase tracking-widest">{p.category}</td>
-                      <td className="px-6 py-4 font-bold text-zinc-300 text-sm">${p.price}</td>
+                      <td className="px-6 py-4 font-bold text-zinc-300 text-sm translate-no" translate="no">${p.price} MXN</td>
                       <td className="px-6 py-4 text-xs font-mono text-zinc-400">{p.stock || 0} left</td>
                       <td className="px-6 py-4 text-right space-x-2">
                         <Button onClick={() => openEditModal(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-400 hover:text-white">

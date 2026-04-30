@@ -114,6 +114,7 @@ export function Shop() {
                   <button
                     key={size}
                     onClick={() => toggleSize(size)}
+                    translate="no"
                     className={cn(
                       "px-3 py-1 border rounded-full text-[10px] cursor-pointer transition-colors font-bold tracking-widest",
                       activeSizes.includes(size) 

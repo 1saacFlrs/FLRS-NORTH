@@ -141,9 +141,9 @@ export function Cart() {
                   <div>
                     <div className="flex justify-between items-start">
                       <h3 className="font-medium text-sm md:text-base uppercase tracking-widest">{item.name}</h3>
-                      <p className="font-bold text-zinc-300">${item.price}</p>
+                      <p className="font-bold text-zinc-300 translate-no" translate="no">${item.price} MXN</p>
                     </div>
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1">Size: {item.size}</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1 translate-no" translate="no">Size: {item.size}</p>
                   </div>
                   <div className="flex justify-between items-center mt-4">
                     <div className="flex items-center border border-zinc-800">
@@ -181,7 +181,7 @@ export function Cart() {
             <h2 className="text-sm font-bold uppercase tracking-[0.2em] mb-6 text-white">Order Summary</h2>
             <div className="flex justify-between items-center mb-4 text-xs tracking-widest uppercase">
               <span className="text-zinc-500">Subtotal</span>
-              <span className="font-bold text-white">${getCartTotal().toFixed(2)}</span>
+              <span className="font-bold text-white translate-no" translate="no">${getCartTotal().toFixed(2)} MXN</span>
             </div>
             <div className="flex justify-between items-center mb-6 text-xs tracking-widest uppercase">
               <span className="text-zinc-500">Shipping</span>
@@ -189,7 +189,7 @@ export function Cart() {
             </div>
             <div className="border-t border-zinc-800 pt-4 mb-8 flex justify-between items-center">
               <span className="font-bold uppercase tracking-[0.2em] text-sm text-white">Total</span>
-              <span className="font-bold text-xl text-white">${getCartTotal().toFixed(2)}</span>
+              <span className="font-bold text-xl text-white translate-no" translate="no">${getCartTotal().toFixed(2)} MXN</span>
             </div>
             
             {!showCheckoutForm ? (

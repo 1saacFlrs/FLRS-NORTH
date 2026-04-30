@@ -32,7 +32,7 @@ export function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const { items: orders, removeOrder } = useOrdersStore();
+  const { items: orders, removeOrder, updateOrderStatus } = useOrdersStore();
 
   useEffect(() => {
     if (!user) {
@@ -267,7 +267,7 @@ export function Profile() {
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Total</p>
-                            <p className="text-xs font-bold text-white">${order.total}</p>
+                            <p className="text-xs font-bold text-white translate-no" translate="no">${order.total.toFixed(2)} MXN</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Status</p>
@@ -299,16 +299,29 @@ export function Profile() {
                               <Printer className="w-3 h-3 md:mr-1" /> <span className="hidden md:inline">Imprimir</span>
                             </Button>
 
-                            <Button
-                              onClick={() => {
-                                if (confirm('Are you sure you want to cancel this order?')) {
-                                  removeOrder(order.id);
-                                }
-                              }}
-                              className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-black text-red-500 hover:text-red-400 hover:bg-zinc-900 border border-zinc-800 hover:border-red-900 h-8 rounded-none"
-                            >
-                              <Trash2 className="w-3 h-3 mr-1" /> Cancel
-                            </Button>
+                            {order.status !== 'delivered' && (
+                              <>
+                                <Button
+                                  onClick={() => {
+                                    updateOrderStatus(order.id, 'delivered');
+                                  }}
+                                  className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-zinc-900 text-green-500 hover:text-green-400 hover:bg-zinc-800 border border-zinc-800 hover:border-green-900 h-8 rounded-none"
+                                >
+                                  <CheckCircle2 className="w-3 h-3 md:mr-1" /> <span className="hidden md:inline">Ya Entregado</span>
+                                </Button>
+
+                                <Button
+                                  onClick={() => {
+                                    if (confirm('Una vez ya enviada la factura y haber pagado el pedido ante el proveedor, cancelar esta orden no interferirá con el proceso de compra o entrega. ¿Estás seguro que deseas cancelar esta orden?')) {
+                                      removeOrder(order.id);
+                                    }
+                                  }}
+                                  className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-black text-red-500 hover:text-red-400 hover:bg-zinc-900 border border-zinc-800 hover:border-red-900 h-8 rounded-none"
+                                >
+                                  <Trash2 className="w-3 h-3 md:mr-1" /> <span className="hidden md:inline">Cancel</span>
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                         

@@ -41,32 +41,42 @@ export function Invoice() {
 
   const handleWhatsApp = () => {
     if (!providerInfo?.phone) return;
-    const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price}`).join('%0A');
-    const text = `Hello! I would like to proceed with Order #${order.id}.%0A%0AItems:%0A${itemsList}%0A%0ATotal: $${order.total.toFixed(2)}`;
+    const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price.toFixed(2)} MXN`).join('%0A');
+    const text = `Hello! I would like to proceed with Order #${order.id}.%0A%0AItems:%0A${itemsList}%0A%0ATotal: $${order.total.toFixed(2)} MXN`;
     const phone = providerInfo.phone.replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
 
   const handleEmail = () => {
     if (!providerInfo?.email) return;
-    const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price}`).join('\n');
+    const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price.toFixed(2)} MXN`).join('\n');
     const subject = encodeURIComponent(`Order Inquiry #${order.id}`);
-    const body = encodeURIComponent(`Hello!\n\nI would like to proceed with Order #${order.id}.\n\nItems:\n${itemsList}\n\nTotal: $${order.total.toFixed(2)}\n\nPlease let me know how to proceed with payment and shipping.\n\nThank you!`);
+    const body = encodeURIComponent(`Hello!\n\nI would like to proceed with Order #${order.id}.\n\nItems:\n${itemsList}\n\nTotal: $${order.total.toFixed(2)} MXN\n\nPlease let me know how to proceed with payment and shipping.\n\nThank you!`);
     window.location.href = `mailto:${providerInfo.email}?subject=${subject}&body=${body}`;
   };
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
   const handleDownloadPDF = async () => {
-    const html2pdf = (await import('html2pdf.js')).default;
-    const element = document.getElementById('invoice-content');
-    if (!element) return;
-    const opt = {
-      margin:       0.5,
-      filename:     `Invoice-${order.id}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+    setIsDownloading(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const element = document.getElementById('invoice-content');
+      if (!element) return;
+      const opt = {
+        margin:       0.5,
+        filename:     `Invoice-${order.id}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("Error generating PDF", err);
+      alert("There was an error creating the PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -79,8 +89,8 @@ export function Invoice() {
       </div>
 
       <div className="flex justify-end gap-2 mb-8 print:hidden">
-         <Button onClick={handleDownloadPDF} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs">
-           <Download className="w-4 h-4 mr-2" /> PDF / Descargar
+         <Button onClick={handleDownloadPDF} disabled={isDownloading} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs">
+           <Download className="w-4 h-4 mr-2" /> {isDownloading ? 'Generando...' : 'PDF / Descargar'}
          </Button>
          <Button onClick={() => window.print()} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs text-white">
            <Printer className="w-4 h-4 mr-2" /> Imprimir
@@ -132,11 +142,11 @@ export function Invoice() {
                 <img src={item.imageUrl} alt={item.name} className="w-12 h-16 object-cover bg-zinc-900" />
                 <div>
                   <h3 className="text-sm font-medium uppercase tracking-widest leading-none mb-1">{item.name}</h3>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Size: {item.size} | Qty: {item.quantity}</p>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest translate-no" translate="no">Size: {item.size} | Qty: {item.quantity}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="text-sm font-bold translate-no" translate="no">${(item.price * item.quantity).toFixed(2)} MXN</p>
               </div>
             </div>
           ))}
@@ -146,7 +156,7 @@ export function Invoice() {
           <div className="w-full sm:w-1/2 md:w-1/3">
             <div className="flex justify-between text-xs tracking-widest uppercase mb-2">
               <span className="text-zinc-500">Subtotal</span>
-              <span>${order.total.toFixed(2)}</span>
+              <span className="translate-no" translate="no">${order.total.toFixed(2)} MXN</span>
             </div>
             <div className="flex justify-between text-xs tracking-widest uppercase mb-4 border-b border-zinc-800 pb-4">
               <span className="text-zinc-500">Shipping</span>
@@ -154,7 +164,7 @@ export function Invoice() {
             </div>
             <div className="flex justify-between font-bold text-lg uppercase tracking-widest">
               <span>Total</span>
-              <span>${order.total.toFixed(2)}</span>
+              <span className="translate-no" translate="no">${order.total.toFixed(2)} MXN</span>
             </div>
           </div>
         </div>

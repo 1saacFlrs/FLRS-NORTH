@@ -8,10 +8,30 @@
 
 body {
   @apply bg-black text-white font-sans antialiased;
+  top: 0 !important; /* Forces body not to shift down when GT loads */
+}
+
+/* Hide Google Translate top frame */
+.skiptranslate iframe.goog-te-banner-frame {
+  display: none !important;
+}
+
+/* Style the widget */
+#google_translate_element {
+  display: inline-block;
+}
+.goog-te-gadget {
+  font-family: 'Inter', sans-serif !important;
+  color: transparent !important; /* hides the "Powered by Google" text */
+  margin-top: 10px;
+}
+.goog-te-gadget .goog-te-combo {
+  @apply bg-black text-white border border-zinc-800 text-[10px] uppercase tracking-widest p-1.5 focus:outline-none focus:border-zinc-500 rounded-none;
 }
 
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -24,4 +44,12 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-zinc-700;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

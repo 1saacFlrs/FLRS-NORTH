@@ -61,7 +61,7 @@ export function Favorites() {
                         <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1">{product.category}</p>
                         <h4 className="text-sm font-medium">{product.name}</h4>
                       </div>
-                      <p className="text-sm font-bold text-zinc-300">${product.price}</p>
+                      <p className="text-sm font-bold text-zinc-300 translate-no" translate="no">${product.price} MXN</p>
                     </div>
                   </Link>
                 </div>

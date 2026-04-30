@@ -107,33 +107,57 @@ export function ProductPage() {
           </button>
           <OfferBadge offer={product.offer} />
           <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 relative group">
-            { (() => {
-              const allImages = [product.imageUrl, ...(product.images || [])];
-              const currentMedia = allImages[activeImageIndex];
-              const isVideo = currentMedia?.match(/\.(mp4|webm|ogg)$/i) || currentMedia?.includes('youtube.com') || currentMedia?.includes('vimeo.com');
-              
-              return isVideo ? (
-                <video src={currentMedia} autoPlay loop muted playsInline className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700" />
-              ) : (
-                <img 
-                  src={currentMedia} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700"
-                />
-              );
-            })() }
+            <div 
+              id="slider"
+              className="w-full h-full flex overflow-x-auto snap-x snap-mandatory hide-scrollbar" 
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              onScroll={(e) => {
+                const el = e.target as HTMLElement;
+                const idx = Math.round(el.scrollLeft / el.clientWidth);
+                setActiveImageIndex(idx);
+              }}
+            >
+              {[product.imageUrl, ...(product.images || [])].map((media, idx) => {
+                const isVideo = media?.match(/\.(mp4|webm|ogg)$/i) || media?.includes('youtube.com') || media?.includes('vimeo.com');
+                return (
+                  <div key={idx} className="w-full h-full shrink-0 snap-start relative">
+                    {isVideo ? (
+                      <video src={media} autoPlay loop muted playsInline className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700" />
+                    ) : (
+                      <img src={media} alt={`${product.name} display ${idx + 1}`} className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             
             {/* Slider Controls */}
             { [product.imageUrl, ...(product.images || [])].length > 1 && (
               <>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setActiveImageIndex(prev => prev === 0 ? [product.imageUrl, ...(product.images || [])].length - 1 : prev - 1); }}
+                  onClick={(e) => { 
+                    e.stopPropagation();
+                    const el = document.getElementById('slider');
+                    const numImages = [product.imageUrl, ...(product.images || [])].length;
+                     if (el) {
+                       const newIdx = activeImageIndex === 0 ? numImages - 1 : activeImageIndex - 1;
+                       el.scrollTo({ left: newIdx * el.clientWidth, behavior: 'smooth' });
+                     }
+                  }}
                   className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-white hover:text-black rounded-full opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setActiveImageIndex(prev => prev === [product.imageUrl, ...(product.images || [])].length - 1 ? 0 : prev + 1); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    const el = document.getElementById('slider');
+                    const numImages = [product.imageUrl, ...(product.images || [])].length;
+                     if (el) {
+                       const newIdx = activeImageIndex === numImages - 1 ? 0 : activeImageIndex + 1;
+                       el.scrollTo({ left: newIdx * el.clientWidth, behavior: 'smooth' });
+                     }
+                  }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-white hover:text-black rounded-full opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -142,7 +166,13 @@ export function ProductPage() {
                   {[product.imageUrl, ...(product.images || [])].map((_, idx) => (
                     <button 
                       key={idx}
-                      onClick={(e) => { e.stopPropagation(); setActiveImageIndex(idx); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        const el = document.getElementById('slider');
+                         if (el) {
+                           el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
+                         }
+                      }}
                       className={`w-2 h-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-white' : 'bg-white/30 hover:bg-white/70'}`}
                     />
                   ))}
@@ -154,9 +184,9 @@ export function ProductPage() {
 
         <div className="w-full md:w-1/2 flex flex-col pt-8">
           <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">{product.category}</p>
-          <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-[0.2em] mb-4 text-white">{product.name}</h1>
+          <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-[0.2em] mb-4 text-white" translate="no">{product.name}</h1>
           <div className="flex items-center gap-4 mb-8">
-            <p className="text-2xl font-medium text-zinc-300">${product.price}</p>
+            <p className="text-2xl font-medium text-zinc-300" translate="no">${product.price} MXN</p>
             {currentSizeStock !== undefined && (
                <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 border rounded ${isCurrentSelectionOutOfStock ? 'border-red-900 text-red-500 bg-red-950/30' : (currentSizeStock < 5 ? 'border-amber-900 text-amber-500 bg-amber-950/30' : 'border-zinc-800 text-zinc-400')}`}>
                  {isCurrentSelectionOutOfStock ? 'Sold Out' : `${currentSizeStock} in stock`}
@@ -181,6 +211,7 @@ export function ProductPage() {
                     key={size}
                     onClick={() => setSelectedSize(size)}
                     disabled={sizeOutOfStock}
+                    translate="no"
                     className={cn(
                       "px-4 py-2 border rounded-full text-[10px] uppercase font-medium transition-colors",
                       selectedSize === size

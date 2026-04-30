@@ -1,14 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Heart, User as UserIcon, LogOut } from 'lucide-react';
+import { ShoppingCart, Menu, X, Heart, User as UserIcon, LogOut, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useCartStore } from '../../store/useCartStore';
 import { useFavoritesStore } from '../../store/useFavoritesStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { auth } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
+import { SearchOverlay } from '../SearchOverlay';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const cartItems = useCartStore((state) => state.items);
   const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const favoriteItems = useFavoritesStore((state) => state.items);
@@ -26,11 +28,12 @@ export function Navbar() {
   };
 
   return (
+    <>
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800 print:hidden">
       <div className="max-w-7xl mx-auto px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center gap-12">
-            <Link to="/" className="text-2xl font-bold tracking-[0.2em] uppercase text-white">
+            <Link to="/" className="text-2xl font-bold tracking-[0.2em] uppercase text-white" translate="no">
               FLRS NORTH
             </Link>
             
@@ -43,6 +46,10 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-6">
+            <div id="google_translate_element" className="mt-0 mb-2 hidden md:block"></div>
+            <button onClick={() => setIsSearchOpen(true)} className="relative hover:text-zinc-300 transition-colors">
+              <Search className="w-5 h-5 text-white" />
+            </button>
             <Link to="/favorites" className="relative hover:text-zinc-300 transition-colors">
               <Heart className="w-5 h-5 text-white" />
               {favoriteItems.length > 0 && (
@@ -139,5 +146,7 @@ export function Navbar() {
         </div>
       )}
     </nav>
+    <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    </>
   );
 }

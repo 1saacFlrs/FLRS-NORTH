@@ -32,7 +32,7 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
             <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1">{product.category}</p>
             <h4 className="text-sm font-medium">{product.name}</h4>
           </div>
-          <p className="text-sm font-bold text-zinc-300">${product.price}</p>
+          <p className="text-sm font-bold text-zinc-300 translate-no" translate="no">${product.price} MXN</p>
         </div>
         {(product.stock !== undefined) && (
            <div className={`mt-1 text-[10px] uppercase tracking-widest font-bold ${product.stock > 0 ? (product.stock < 5 ? 'text-red-500' : 'text-zinc-500') : 'text-red-600'}`}>
