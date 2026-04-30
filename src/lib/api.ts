@@ -18,6 +18,8 @@ export interface Product {
   imageUrl: string;
   sizes: string[];
   stock: number;
+  stockBySize?: Record<string, number>;
+  publishDate: string;
   offer: ProductOffer;
   createdAt?: any;
   updatedAt?: any;
@@ -51,28 +53,28 @@ export const getProducts = async (): Promise<Product[]> => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 };
 
-export const getCategories = async (): Promise<Category[]> => {
-  const q = query(collection(db, 'categories'), orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-};
-
-export const addCategory = async (name: string) => {
-  const docRef = await addDoc(collection(db, 'categories'), {
-    name,
-    createdAt: serverTimestamp()
+export const getVisibleProducts = async (): Promise<Product[]> => {
+  const products = await getProducts();
+  const now = new Date();
+  return products.filter(p => {
+    if (!p.publishDate) return true;
+    const pubDate = new Date(p.publishDate);
+    return isNaN(pubDate.getTime()) || pubDate <= now;
   });
-  return docRef.id;
 };
 
-export const deleteCategory = async (id: string) => {
-  await deleteDoc(doc(db, 'categories', id));
-};
+
 
 export const getFeaturedProducts = async (): Promise<Product[]> => {
-  const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(4));
+  const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(20));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+  const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+  const now = new Date();
+  return all.filter(p => {
+    if (!p.publishDate) return true;
+    const pubDate = new Date(p.publishDate);
+    return isNaN(pubDate.getTime()) || pubDate <= now;
+  }).slice(0, 4);
 };
 
 export const getProductById = async (id: string): Promise<Product | null> => {

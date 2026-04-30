@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
-import { getProducts, addProduct, updateProduct, deleteProduct, uploadImageResumable, Product, getCategories, addCategory, deleteCategory, Category } from '../lib/api';
+import React, { useEffect, useState } from 'react';
+import { getProducts, addProduct, updateProduct, deleteProduct, uploadImageResumable, Product } from '../lib/api';
 import { useProcessStore } from '../store/useProcessStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Pencil, Trash2, X, Image as ImageIcon, Eye, EyeOff, Tag, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Image as ImageIcon, Eye, EyeOff, Tag, Loader2, Calendar } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+
+const PREDEFINED_CATEGORIES = ['T-Shirts', 'Hoodies', 'Sweaters', 'Jackets', 'Pants', 'Shorts', 'Accessories', 'Hats', 'Shoes', 'Bags', 'Socks'];
+const PREDEFINED_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 
 export function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -14,12 +17,7 @@ export function AdminDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  
-  // Category Form
-  const [newCategoryName, setNewCategoryName] = useState('');
 
   // Process Store
   const { processes, addProcess, updateProcess, removeProcess, clearCompleted } = useProcessStore();
@@ -32,12 +30,12 @@ export function AdminDashboard() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('T-Shirts');
-  const [sizes, setSizes] = useState<string>('S, M, L, XL');
-  const [stock, setStock] = useState<string>('10');
+  const [category, setCategory] = useState(PREDEFINED_CATEGORIES[0]);
+  const [stockBySize, setStockBySize] = useState<Record<string, string | number>>({});
+  const [publishMode, setPublishMode] = useState<'now' | 'later'>('now');
+  const [publishDate, setPublishDate] = useState<string>('');
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   
   const [offerActive, setOfferActive] = useState(false);
   const [offerType, setOfferType] = useState<'color' | 'image'>('color');
@@ -54,21 +52,8 @@ export function AdminDashboard() {
   useEffect(() => {
     if (user) {
       fetchProducts();
-      fetchCategoriesList();
     }
   }, [user]);
-
-  const fetchCategoriesList = async () => {
-    setLoadingCategories(true);
-    try {
-      const data = await getCategories();
-      setCategories(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingCategories(false);
-    }
-  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -101,10 +86,15 @@ export function AdminDashboard() {
     setName('');
     setPrice('');
     setDescription('');
-    if (categories.length > 0) setCategory(categories[0].name);
-    else setCategory('T-Shirts');
-    setSizes('S, M, L, XL');
-    setStock('10');
+    setCategory(PREDEFINED_CATEGORIES[0]);
+    
+    // Default available stock map
+    const defaultStock: Record<string, number> = {};
+    ['S', 'M', 'L', 'XL'].forEach(s => defaultStock[s] = 10);
+    setStockBySize(defaultStock);
+    
+    setPublishMode('now');
+    setPublishDate('');
     setImageUrl('');
     setImageFile(null);
     setOfferActive(false);
@@ -120,8 +110,27 @@ export function AdminDashboard() {
     setPrice(p.price.toString());
     setDescription(p.description);
     setCategory(p.category);
-    setSizes(p.sizes.join(', '));
-    setStock(p.stock !== undefined ? p.stock.toString() : '0');
+    
+    // Load Stock
+    if (p.stockBySize && Object.keys(p.stockBySize).length > 0) {
+       setStockBySize(p.stockBySize);
+    } else if (p.sizes && p.sizes.length > 0) {
+       // Migrate from old format
+       const oldStockMap: Record<string, number> = {};
+       const perSize = Math.floor((p.stock || 0) / p.sizes.length);
+       p.sizes.forEach(s => oldStockMap[s] = perSize);
+       setStockBySize(oldStockMap);
+    } else {
+       setStockBySize({});
+    }
+
+    if (p.publishDate) {
+      setPublishMode('later');
+      setPublishDate(p.publishDate);
+    } else {
+      setPublishMode('now');
+      setPublishDate('');
+    }
     setImageUrl(p.imageUrl);
     setImageFile(null);
     
@@ -160,61 +169,67 @@ export function AdminDashboard() {
     }
   };
 
-  const handleDeleteCategory = async (c: Category) => {
-    if (confirm(`Delete category "${c.name}"?`)) {
-      const processId = Date.now().toString();
-      addProcess({
-        id: processId,
-        name: `Deleting Category: ${c.name}`,
-        status: 'running',
-        createdAt: Date.now(),
-      });
-      try {
-        await deleteCategory(c.id);
-        fetchCategoriesList();
-        updateProcess(processId, { status: 'completed', message: 'Category deleted' });
-      } catch (e: any) {
-         updateProcess(processId, { status: 'error', message: e.message });
-         alert("Failed: " + e.message);
-      }
-    }
-  };
-
-  const handleAddCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const catName = newCategoryName.trim();
-    if (!catName) return;
-    
-    const processId = Date.now().toString();
-    addProcess({
-      id: processId,
-      name: `Creating Category: ${catName}`,
-      status: 'running',
-      createdAt: Date.now(),
-    });
-
-    try {
-      await addCategory(catName);
-      setNewCategoryName('');
-      fetchCategoriesList();
-      updateProcess(processId, { status: 'completed', message: 'Category added' });
-    } catch (e: any) {
-      updateProcess(processId, { status: 'error', message: e.message });
-      alert("Failed: " + e.message);
-    }
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
     
+    // Validations First
+    if (imageFile && imageFile.size > 2 * 1024 * 1024) {
+      alert("Image size should be less than 2MB for optimal performance.");
+      return;
+    }
+
+    if (offerActive && offerEndDate) {
+      const parsedOfferEndDate = new Date(offerEndDate);
+      if (isNaN(parsedOfferEndDate.getTime()) || parsedOfferEndDate <= new Date()) {
+        alert("Please enter a valid, future end date for the offer.");
+        return;
+      }
+    }
+
+    if (publishMode === 'later' && publishDate) {
+      const parsedPubDate = new Date(publishDate);
+      if (isNaN(parsedPubDate.getTime())) {
+        alert("Please enter a valid date for publishing.");
+        return;
+      }
+    }
+
+    // Compute total stock and sizes
+    const activeSizes = Object.keys(stockBySize).filter(size => stockBySize[size] !== undefined && stockBySize[size] !== '');
+    const cleanStockBySize: Record<string, number> = {};
+    activeSizes.forEach(size => cleanStockBySize[size] = typeof stockBySize[size] === 'string' ? parseInt(stockBySize[size] as string) || 0 : stockBySize[size] as number);
+    const totalStock = Object.values(cleanStockBySize).reduce((sum, val) => sum + val, 0);
+
+    // Capture state to pass into async closure
+    const dataToSave = {
+      name,
+      price: parseFloat(price),
+      description,
+      category,
+      sizes: activeSizes,
+      stock: totalStock,
+      stockBySize: cleanStockBySize,
+      publishDate: publishMode === 'now' ? '' : publishDate,
+      offer: {
+        active: offerActive,
+        type: (offerActive ? offerType : 'none') as 'color' | 'image' | 'none',
+        value: offerActive ? offerValue : '',
+        endDate: offerActive ? offerEndDate : ''
+      }
+    };
+    
+    const passedImageUrl = imageUrl;
+    const passedImageFile = imageFile;
+    const isEdit = !!editingId;
+    const currentEditingId = editingId;
+
     let isCanceled = false;
     let cancelUpload: (() => void) | undefined;
     const processId = Date.now().toString();
 
     addProcess({
       id: processId,
-      name: editingId ? `Updating Product: ${name}` : `Creating Product: ${name}`,
+      name: isEdit ? `Updating Product: ${dataToSave.name}` : `Creating Product: ${dataToSave.name}`,
       status: 'running',
       createdAt: Date.now(),
       cancel: () => {
@@ -224,21 +239,24 @@ export function AdminDashboard() {
       }
     });
 
+    // Close Modal Immediately so admin can continue working
+    setIsModalOpen(false);
+
     try {
-      let finalImageUrl = imageUrl;
+      let finalImageUrl = passedImageUrl;
       
-      if (imageFile) {
+      if (passedImageFile) {
         updateProcess(processId, { message: 'Uploading image...', progress: 0 });
         try {
-          const { uploadTask, getUrl } = uploadImageResumable(imageFile);
+          const { uploadTask, getUrl } = uploadImageResumable(passedImageFile);
           
           cancelUpload = () => {
             uploadTask.cancel();
           };
 
           uploadTask.on('state_changed', (snapshot) => {
-             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-             if (!isCanceled) updateProcess(processId, { progress });
+             const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+             if (!isCanceled) updateProcess(processId, { progress, message: `Uploading (${progress}%)` });
           });
 
           finalImageUrl = await getUrl();
@@ -247,9 +265,7 @@ export function AdminDashboard() {
              return; // Stop flow
           }
           console.error("Storage upload failed, please ensure Firebase Storage is configured:", uploadError);
-          alert("Failed to upload image to Storage. Please provide a direct URL instead.");
-          setIsSaving(false);
-          updateProcess(processId, { status: 'error', message: 'Image upload failed' });
+          updateProcess(processId, { status: 'error', message: 'Image upload failed. Ensure rule exists.' });
           return;
         }
       }
@@ -257,47 +273,30 @@ export function AdminDashboard() {
       if (isCanceled) return;
 
       if (!finalImageUrl) {
-        alert("Please provide an image URL or upload an image.");
-        setIsSaving(false);
         updateProcess(processId, { status: 'error', message: 'Missing final image URL' });
         return;
       }
 
       updateProcess(processId, { message: 'Saving product data...', progress: undefined });
 
-      const productData = {
-        name,
-        price: parseFloat(price),
-        description,
-        category,
+      const finalProductData = {
+        ...dataToSave,
         imageUrl: finalImageUrl,
-        sizes: sizes.split(',').map(s => s.trim()).filter(Boolean),
-        stock: parseInt(stock) || 0,
-        offer: {
-          active: offerActive,
-          type: (offerActive ? offerType : 'none') as 'color' | 'image' | 'none',
-          value: offerActive ? offerValue : '',
-          endDate: offerActive ? offerEndDate : ''
-        }
       };
 
-      if (editingId) {
-        await updateProduct(editingId, productData);
+      if (isEdit) {
+        await updateProduct(currentEditingId!, finalProductData);
       } else {
-        await addProduct(productData);
+        await addProduct(finalProductData);
       }
       
       if (isCanceled) return;
 
-      updateProcess(processId, { status: 'completed', message: 'Success' });
-      setIsModalOpen(false);
+      updateProcess(processId, { status: 'completed', message: 'Success!' });
       fetchProducts();
     } catch (err: any) {
       if (isCanceled) return;
-      alert("Save failed: " + err.message);
       updateProcess(processId, { status: 'error', message: err.message });
-    } finally {
-      if (!isCanceled) setIsSaving(false);
     }
   };
 
@@ -443,46 +442,6 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* Categories Management */}
-      <div className="mt-16 mb-6 flex justify-between items-center">
-        <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Categories</h2>
-      </div>
-
-      <div className="bg-black border border-zinc-900 mb-12 p-6 flex flex-col md:flex-row gap-8">
-        <div className="w-full md:w-1/2">
-          {loadingCategories ? (
-            <div className="text-zinc-500 text-xs uppercase tracking-widest">Loading categories...</div>
-          ) : (
-            <ul className="space-y-2">
-              {categories.map(c => (
-                <li key={c.id} className="flex justify-between items-center bg-zinc-900/50 border border-zinc-800 p-3">
-                  <span className="text-sm font-medium tracking-wider uppercase text-zinc-300">{c.name}</span>
-                  <Button onClick={() => handleDeleteCategory(c)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-600 hover:text-red-500 hover:border-red-900">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </li>
-              ))}
-              {categories.length === 0 && (
-                <div className="text-zinc-600 text-xs uppercase tracking-widest p-4 text-center border border-zinc-800 border-dashed">No categories found.</div>
-              )}
-            </ul>
-          )}
-        </div>
-        <div className="w-full md:w-1/2">
-          <form onSubmit={handleAddCategory} className="space-y-4 bg-zinc-900/30 p-4 border border-zinc-800">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">New Category</label>
-              <div className="flex gap-2">
-                <Input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="E.g. Sneakers" required className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700 flex-1" />
-                <Button type="submit" className="rounded-none uppercase tracking-widest text-[10px] bg-white text-black hover:bg-zinc-200">
-                  Add
-                </Button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -512,21 +471,73 @@ export function AdminDashboard() {
                       onChange={e => setCategory(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-700 text-white"
                     >
-                      <option value="T-Shirts">T-Shirts</option>
-                      <option value="Hoodies">Hoodies</option>
-                      <option value="Accessories">Accessories</option>
-                      {categories.map(c => (
-                        <option key={c.id} value={c.name}>{c.name}</option>
+                      {PREDEFINED_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Sizes (Comma separated)</label>
-                    <Input value={sizes} onChange={e => setSizes(e.target.value)} required placeholder="S, M, L, XL" className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700" />
+                  
+                  <div className="w-full">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Inventory by Size</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 border border-zinc-800 bg-zinc-900/50">
+                      {PREDEFINED_SIZES.map(size => {
+                        const isEnabled = stockBySize[size] !== undefined;
+                        return (
+                          <div key={size} className="flex flex-col gap-2 p-2 border border-zinc-800 bg-black">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={isEnabled}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setStockBySize(prev => ({ ...prev, [size]: 0 }));
+                                  } else {
+                                    const newStock = { ...stockBySize };
+                                    delete newStock[size];
+                                    setStockBySize(newStock);
+                                  }
+                                }}
+                                className="rounded border-zinc-800 bg-zinc-900"
+                              />
+                              <span className="text-xs font-bold text-white">{size}</span>
+                            </label>
+                            {isEnabled && (
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                value={stockBySize[size] !== undefined ? stockBySize[size] : ''} 
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setStockBySize(prev => ({ ...prev, [size]: val }));
+                                }} 
+                                placeholder="Qty" 
+                                className="h-8 text-xs bg-zinc-900 border-zinc-800" 
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
+
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Stock</label>
-                    <Input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} required placeholder="10" className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700" />
+                    <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Publish Settings</label>
+                    <div className="flex gap-4 mb-2">
+                       <label className="flex items-center gap-2 cursor-pointer">
+                         <input type="radio" value="now" checked={publishMode === 'now'} onChange={(e) => setPublishMode(e.target.value as 'now' | 'later')} className="accent-white" />
+                         <span className="text-xs text-white">Publish Now</span>
+                       </label>
+                       <label className="flex items-center gap-2 cursor-pointer">
+                         <input type="radio" value="later" checked={publishMode === 'later'} onChange={(e) => setPublishMode(e.target.value as 'now' | 'later')} className="accent-white" />
+                         <span className="text-xs text-white">Set Date</span>
+                       </label>
+                    </div>
+                    {publishMode === 'later' && (
+                      <div className="relative mt-2">
+                        <Input type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={publishDate} onChange={e => setPublishDate(e.target.value)} required className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700 text-zinc-300 [&::-webkit-calendar-picker-indicator]:bg-white [&::-webkit-calendar-picker-indicator]:rounded-sm" />
+                        <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest">Product will be hidden until this date</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -545,6 +556,7 @@ export function AdminDashboard() {
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Image</label>
                     <div className="border border-dashed border-zinc-800 bg-zinc-900/50 p-4 text-center">
+                      <div className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mb-4">Max 2MB. Recommended: 800x800 PNG/JPG</div>
                       <Input 
                         type="file" 
                         accept="image/*"
@@ -612,7 +624,7 @@ export function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">End Date</label>
-                      <Input type="datetime-local" value={offerEndDate} onChange={e => setOfferEndDate(e.target.value)} required={offerActive} className="bg-zinc-900 border-zinc-800 text-white" />
+                      <Input type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={offerEndDate} onChange={e => setOfferEndDate(e.target.value)} required={offerActive} className="bg-zinc-900 border-zinc-800 text-white [&::-webkit-calendar-picker-indicator]:bg-white [&::-webkit-calendar-picker-indicator]:rounded-sm" />
                     </div>
                   </div>
                 )}
@@ -620,8 +632,8 @@ export function AdminDashboard() {
               
               <div className="pt-6 border-t border-zinc-900 flex flex-col-reverse sm:flex-row justify-end sm:space-x-4">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="mt-4 sm:mt-0 rounded-none uppercase text-[10px] tracking-widest border-zinc-800 hover:bg-zinc-900 text-zinc-300 hover:text-white">Cancel</Button>
-                <Button type="submit" disabled={isSaving} className="rounded-none uppercase tracking-widest text-[10px] bg-white text-black hover:bg-zinc-200">
-                  {isSaving ? 'Saving...' : 'Save Product'}
+                <Button type="submit" className="rounded-none uppercase tracking-widest text-[10px] bg-white text-black hover:bg-zinc-200">
+                  Save Product
                 </Button>
               </div>
             </form>

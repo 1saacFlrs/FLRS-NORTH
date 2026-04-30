@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getProducts, getCategories, Product, Category } from '../lib/api';
+import { getVisibleProducts, Product } from '../lib/api';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { ProductCard } from '../components/ProductCard';
@@ -8,22 +8,19 @@ import { ProductCard } from '../components/ProductCard';
 export function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>(['All']);
+  const [categories, setCategories] = useState<string[]>(['All', 'T-Shirts', 'Hoodies', 'Accessories']);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
-          getProducts(),
-          getCategories()
-        ]);
+        const productsData = await getVisibleProducts();
         setProducts(productsData);
         setFilteredProducts(productsData);
         
-        // Dynamically add categories
-        const dynamicCategories = categoriesData.map(c => c.name);
+        // Dynamically add categories based on existing products
+        const dynamicCategories = productsData.map(p => p.category);
         const allCategories = ['All', 'T-Shirts', 'Hoodies', 'Accessories', ...dynamicCategories];
         // Deduplicate
         setCategories([...new Set(allCategories)]);

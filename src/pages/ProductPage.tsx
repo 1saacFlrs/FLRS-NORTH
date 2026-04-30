@@ -35,8 +35,16 @@ export function ProductPage() {
     fetchProduct();
   }, [id]);
 
+  const getSizeStock = (size: string) => {
+    if (!product) return 0;
+    if (product.stockBySize && product.stockBySize[size] !== undefined) {
+      return product.stockBySize[size];
+    }
+    return product.stock !== undefined ? product.stock : 0;
+  };
+
   const handleAddToCart = () => {
-    if (!product || !selectedSize || (product.stock !== undefined && product.stock <= 0)) return;
+    if (!product || !selectedSize || getSizeStock(selectedSize) <= 0) return;
     
     addItem({
       id: product.id!,
@@ -73,7 +81,10 @@ export function ProductPage() {
     );
   }
 
-  const isOutOfStock = product.stock !== undefined && product.stock <= 0;
+  const isGlobalOutOfStock = product.stock !== undefined && product.stock <= 0;
+  
+  const currentSizeStock = selectedSize ? getSizeStock(selectedSize) : product.stock;
+  const isCurrentSelectionOutOfStock = currentSizeStock !== undefined && currentSizeStock <= 0;
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-12 w-full text-white">
@@ -108,9 +119,9 @@ export function ProductPage() {
           <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-[0.2em] mb-4 text-white">{product.name}</h1>
           <div className="flex items-center gap-4 mb-8">
             <p className="text-2xl font-medium text-zinc-300">${product.price}</p>
-            {product.stock !== undefined && (
-               <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 border rounded ${isOutOfStock ? 'border-red-900 text-red-500 bg-red-950/30' : (product.stock < 5 ? 'border-amber-900 text-amber-500 bg-amber-950/30' : 'border-zinc-800 text-zinc-400')}`}>
-                 {isOutOfStock ? 'Sold Out' : `${product.stock} in stock`}
+            {currentSizeStock !== undefined && (
+               <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 border rounded ${isCurrentSelectionOutOfStock ? 'border-red-900 text-red-500 bg-red-950/30' : (currentSizeStock < 5 ? 'border-amber-900 text-amber-500 bg-amber-950/30' : 'border-zinc-800 text-zinc-400')}`}>
+                 {isCurrentSelectionOutOfStock ? 'Sold Out' : `${currentSizeStock} in stock`}
                </span>
             )}
           </div>
@@ -125,22 +136,25 @@ export function ProductPage() {
               <span className="text-[10px] text-zinc-500 underline cursor-pointer hover:text-white transition-colors">Size Guide</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  disabled={isOutOfStock}
-                  className={cn(
-                    "px-4 py-2 border rounded-full text-[10px] uppercase font-medium transition-colors",
-                    selectedSize === size
-                      ? "border-zinc-400 bg-white text-black"
-                      : "border-zinc-800 text-white hover:border-zinc-400",
-                    isOutOfStock && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {size}
-                </button>
-              ))}
+              {product.sizes.map((size) => {
+                const sizeOutOfStock = getSizeStock(size) <= 0;
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    disabled={sizeOutOfStock}
+                    className={cn(
+                      "px-4 py-2 border rounded-full text-[10px] uppercase font-medium transition-colors",
+                      selectedSize === size
+                        ? "border-zinc-400 bg-white text-black"
+                        : "border-zinc-800 text-white hover:border-zinc-400",
+                      sizeOutOfStock && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -148,9 +162,9 @@ export function ProductPage() {
             onClick={handleAddToCart}
             size="lg" 
             className="w-full py-6 text-xs uppercase tracking-widest font-bold rounded-none bg-white text-black hover:bg-zinc-200 disabled:opacity-50"
-            disabled={!selectedSize || isOutOfStock}
+            disabled={!selectedSize || isCurrentSelectionOutOfStock}
           >
-            {isOutOfStock ? 'Sold Out' : (selectedSize ? 'Add to Cart' : 'Select a Size')}
+            {isCurrentSelectionOutOfStock ? 'Sold Out' : (selectedSize ? 'Add to Cart' : 'Select a Size')}
           </Button>
 
           <div className="mt-12 border-t border-zinc-800 divide-y divide-zinc-800 text-sm">

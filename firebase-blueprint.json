@@ -50,7 +50,7 @@
           "description": "Timestamp of last update"
         }
       },
-      "required": ["name", "price", "description", "category", "imageUrl", "sizes", "stock", "offer", "createdAt", "updatedAt"]
+      "required": ["name", "price", "description", "category", "imageUrl", "sizes", "stock", "stockBySize", "publishDate", "offer", "createdAt", "updatedAt"]
     },
     "AdminConfig": {
       "title": "Admin Configuration",
@@ -63,16 +63,6 @@
         }
       },
       "required": ["email"]
-    },
-    "Category": {
-      "title": "Category",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "name", "createdAt"]
     },
     "ProductOffer": {
       "title": "Product Offer",
@@ -159,12 +149,6 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Contains profiles for all registered users, including their cart and favorites"
-    },
-    "/categories/{categoryId}": {
-      "schema": {
-        "$ref": "#/entities/Category"
-      },
-      "description": "Contains product categories"
     }
   }
 }

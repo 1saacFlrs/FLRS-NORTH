@@ -1,10 +1,11 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../lib/api';
 import { Heart, HeartOff } from 'lucide-react';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { OfferBadge } from './OfferBadge';
 
-export function ProductCard({ product }: { product: Product }) {
+export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const isFav = isFavorite(product.id!);
 
