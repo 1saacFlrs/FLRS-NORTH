@@ -46,7 +46,6 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-6">
-            <div id="google_translate_element" className="mt-0 mb-2 hidden md:block"></div>
             <button onClick={() => setIsSearchOpen(true)} className="relative hover:text-zinc-300 transition-colors">
               <Search className="w-5 h-5 text-white" />
             </button>
