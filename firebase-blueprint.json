@@ -111,6 +111,22 @@
         "email": {
           "type": "string"
         },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User verified phone number"
+        },
+        "shippingInfo": {
+          "type": "object",
+          "properties": {
+            "fullName": { "type": "string" },
+            "address": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "zipCode": { "type": "string" },
+            "country": { "type": "string" }
+          },
+          "required": ["fullName", "address", "city", "state", "zipCode", "country"]
+        },
         "cart": {
           "type": "array",
           "items": { "$ref": "#/entities/CartItem" }

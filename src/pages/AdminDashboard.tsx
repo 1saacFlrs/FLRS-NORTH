@@ -3,7 +3,7 @@ import { getProducts, addProduct, updateProduct, deleteProduct, uploadImageResum
 import { useProcessStore } from '../store/useProcessStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Pencil, Trash2, X, Image as ImageIcon, Eye, EyeOff, Tag, Loader2, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Image as ImageIcon, Eye, EyeOff, Tag, Loader2, Calendar, LockKeyhole } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
@@ -42,18 +42,38 @@ export function AdminDashboard() {
   const [offerValue, setOfferValue] = useState('#ff0000');
   const [offerEndDate, setOfferEndDate] = useState('');
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        try {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const { db } = await import('../lib/firebase');
+          const isAdminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
+          if (isAdminDoc.exists() || currentUser.email === 'isaacjaredmorenoflores@gmail.com') {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (e) {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      setAuthChecking(false);
     });
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && isAdmin) {
       fetchProducts();
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -300,18 +320,27 @@ export function AdminDashboard() {
     }
   };
 
+  if (authChecking) {
+    return (
+      <div className="max-w-md mx-auto mt-24 px-8 w-full text-white text-center">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto text-zinc-500 mb-4" />
+        <p className="text-xs uppercase tracking-widest text-zinc-400">Verifying access...</p>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="max-w-md mx-auto mt-24 px-8 w-full text-white">
-        <div className="bg-zinc-900/50 p-8 border border-zinc-800 shadow-xl">
+        <div className="bg-zinc-900/50 p-8 border border-zinc-800 shadow-xl relative overflow-hidden">
           <h2 className="text-2xl font-bold uppercase tracking-[0.2em] mb-6 text-center">Admin Login</h2>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Email</label>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Email</label>
               <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="bg-black border-zinc-800 text-white" />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Password</label>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Password</label>
               <div className="relative">
                 <Input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required className="bg-black border-zinc-800 text-white pr-10" />
                 <button
@@ -323,14 +352,39 @@ export function AdminDashboard() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">Login</Button>
+            <Button type="submit" className="w-full h-12 rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200 mt-4">Login</Button>
           </form>
-          <div className="mt-6 text-[10px] text-zinc-600 text-center uppercase tracking-widest">
-            You must be an authorized admin to login.
+          <div className="mt-8 text-center">
+            <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-2 border-t border-zinc-800 pt-6">Not an admin?</p>
+            <a href="/apply-admin" className="text-xs text-zinc-400 hover:text-white uppercase tracking-widest border-b border-zinc-600 hover:border-white transition-colors pb-0.5">Apply for Access</a>
           </div>
         </div>
       </div>
     );
+  }
+
+  if (!isAdmin) {
+     return (
+      <div className="max-w-md mx-auto mt-24 px-8 w-full text-white">
+        <div className="bg-zinc-900/50 p-8 border border-zinc-800 shadow-xl relative overflow-hidden text-center">
+           <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-6">
+              <LockKeyhole className="w-6 h-6 text-zinc-400" />
+           </div>
+           <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2">Access Denied</h2>
+           <p className="text-xs text-zinc-400 uppercase tracking-[0.1em] mb-8 leading-relaxed">
+             This section is restricted to authorized personnel. If you have an admin code, you can upgrade your account.
+           </p>
+           <div className="space-y-4">
+             <Button onClick={() => window.location.href = '/apply-admin'} className="w-full h-12 rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">
+               Enter Access Code
+             </Button>
+             <Button variant="outline" onClick={handleLogout} className="w-full h-12 rounded-none tracking-widest uppercase border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 relative z-10">
+               Sign Out
+             </Button>
+           </div>
+        </div>
+      </div>
+     );
   }
 
   return (

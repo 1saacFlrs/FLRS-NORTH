@@ -102,14 +102,15 @@ service cloud.firestore {
       allow get: if isAdmin() && isValidId(adminId);
       allow list: if isAdmin();
       
-      // Only the bootstrapped super admin can add other admins
-      allow create: if isSignedIn() && request.auth.token.email == 'isaacjaredmorenoflores@gmail.com' &&
+      // Allow user to upgrade themselves if they provide the secret access code
+      allow create: if isSignedIn() && request.auth.uid == adminId &&
                        isValidId(adminId) && 
-                       incoming().keys().hasAll(['email']) && incoming().keys().size() == 1 &&
-                       incoming().email is string && incoming().email.size() <= 100;
+                       incoming().keys().hasAll(['email', 'accessCode']) &&
+                       incoming().email == request.auth.token.email &&
+                       incoming().accessCode == 'ADMIN_VERIFY_2026';
 
       allow update: if false; // Immutable
-      allow delete: if isSignedIn() && request.auth.token.email == 'isaacjaredmorenoflores@gmail.com' && isValidId(adminId);
+      allow delete: if isAdmin() && isValidId(adminId);
     }
 
     // User Profile Validation
@@ -144,8 +145,20 @@ service cloud.firestore {
       return ordersArg is list && ordersArg.size() <= 1000 && (ordersArg.size() == 0 || isValidOrder(ordersArg[0]));
     }
 
+    function isValidShippingInfo(info) {
+       return info.keys().hasAll(['fullName', 'address', 'city', 'state', 'zipCode', 'country']) &&
+         info.fullName is string && info.fullName.size() <= 100 &&
+         info.address is string && info.address.size() <= 200 &&
+         info.city is string && info.city.size() <= 100 &&
+         info.state is string && info.state.size() <= 100 &&
+         info.zipCode is string && info.zipCode.size() <= 20 &&
+         info.country is string && info.country.size() <= 100;
+    }
+
     function isValidUserProfile(data) {
        return data.keys().hasAll(['email', 'cart', 'favorites', 'orders', 'createdAt']) &&
+              (!data.keys().hasAny(['phoneNumber']) || (data.phoneNumber is string && data.phoneNumber.size() <= 20)) &&
+              (!data.keys().hasAny(['shippingInfo']) || (data.shippingInfo is map && isValidShippingInfo(data.shippingInfo))) &&
               data.email is string && data.email.size() <= 200 &&
               isValidCart(data.cart) &&
               isValidFavorites(data.favorites) &&
@@ -167,7 +180,7 @@ service cloud.firestore {
                        isValidId(userId) &&
                        isValidUserProfile(incoming()) &&
                        incoming().createdAt == existing().createdAt &&
-                       incoming().diff(existing()).affectedKeys().hasOnly(['cart', 'favorites', 'orders']);
+                       incoming().diff(existing()).affectedKeys().hasOnly(['cart', 'favorites', 'orders', 'phoneNumber', 'shippingInfo']);
                        
       allow delete: if false;
     }

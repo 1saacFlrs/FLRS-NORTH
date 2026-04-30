@@ -41,23 +41,6 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-6">
-            {user ? (
-              <div className="hidden md:flex gap-6 items-center">
-                <Link to="/orders" className="text-[10px] text-zinc-400 hover:text-white uppercase tracking-widest transition-colors font-bold">Orders</Link>
-                <div className="flex items-center gap-4">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest">{user.email}</span>
-                  <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors relative group">
-                     <LogOut className="w-5 h-5" />
-                     <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Log Out</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <Link to="/login" className="text-zinc-400 hover:text-white transition-colors">
-                <UserIcon className="w-5 h-5 text-white" />
-              </Link>
-            )}
-
             <Link to="/favorites" className="relative hover:text-zinc-300 transition-colors">
               <Heart className="w-5 h-5 text-white" />
               {favoriteItems.length > 0 && (
@@ -74,6 +57,23 @@ export function Navbar() {
                 </span>
               )}
             </Link>
+
+            {user ? (
+              <div className="hidden md:flex gap-6 items-center border-l border-zinc-800 pl-6 ml-2">
+                <Link to="/profile" className="text-[10px] text-zinc-400 hover:text-white uppercase tracking-widest transition-colors font-bold">Profile</Link>
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest hidden lg:inline">{user.email}</span>
+                  <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors relative group">
+                     <LogOut className="w-5 h-5" />
+                     <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Log Out</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link to="/login" className="text-zinc-400 hover:text-white transition-colors border-l border-zinc-800 pl-6 ml-2">
+                <UserIcon className="w-5 h-5 text-white" />
+              </Link>
+            )}
             <div className="md:hidden flex items-center text-white">
               <button onClick={() => setIsOpen(!isOpen)} className="p-2">
                 {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -104,11 +104,11 @@ export function Navbar() {
             {user ? (
                <>
                  <Link 
-                  to="/orders" 
+                  to="/profile" 
                   className="block px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md"
                   onClick={() => setIsOpen(false)}
                 >
-                  Orders
+                  Profile
                 </Link>
                  <button 
                     onClick={() => { handleLogout(); setIsOpen(false); }}

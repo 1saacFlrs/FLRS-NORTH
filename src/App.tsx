@@ -14,7 +14,8 @@ import { Favorites } from './pages/Favorites';
 import { Login } from './pages/Login';
 import { SignUp } from './pages/SignUp';
 import { ForgotPassword } from './pages/ForgotPassword';
-import { Orders } from './pages/Orders';
+import { Profile } from './pages/Profile';
+import { ApplyAdmin } from './pages/ApplyAdmin';
 import { AuthSync } from './components/AuthSync';
 
 export default function App() {
@@ -28,8 +29,9 @@ export default function App() {
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/apply-admin" element={<ApplyAdmin />} />
           <Route path="/favorites" element={<Favorites />} />
-          <Route path="/orders" element={<Orders />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
