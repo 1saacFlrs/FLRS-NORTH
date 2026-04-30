@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProductById, Product } from '../lib/api';
 import { useCartStore } from '../store/useCartStore';
+import { useFavoritesStore } from '../store/useFavoritesStore';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Heart, HeartOff } from 'lucide-react';
+import { OfferBadge } from '../components/OfferBadge';
 
 export function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +15,7 @@ export function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const addItem = useCartStore(state => state.addItem);
+  const { toggleFavorite, isFavorite } = useFavoritesStore();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -33,7 +36,7 @@ export function ProductPage() {
   }, [id]);
 
   const handleAddToCart = () => {
-    if (!product || !selectedSize) return;
+    if (!product || !selectedSize || (product.stock !== undefined && product.stock <= 0)) return;
     
     addItem({
       id: product.id!,
@@ -45,6 +48,8 @@ export function ProductPage() {
     
     alert("Added to cart!");
   };
+
+  const isFav = product ? isFavorite(product.id!) : false;
 
   if (loading) {
     return (
@@ -68,6 +73,8 @@ export function ProductPage() {
     );
   }
 
+  const isOutOfStock = product.stock !== undefined && product.stock <= 0;
+
   return (
     <div className="max-w-7xl mx-auto px-8 py-12 w-full text-white">
       <button 
@@ -79,8 +86,15 @@ export function ProductPage() {
       </button>
 
       <div className="flex flex-col md:flex-row gap-12 lg:gap-24">
-        <div className="w-full md:w-1/2">
-          <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800">
+        <div className="w-full md:w-1/2 relative">
+          <button 
+            onClick={() => toggleFavorite(product)}
+            className="absolute top-4 right-4 z-20 p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-black transition-colors"
+          >
+            {isFav ? <HeartOff className="w-5 h-5" /> : <Heart className="w-5 h-5" />}
+          </button>
+          <OfferBadge offer={product.offer} />
+          <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 relative">
             <img 
               src={product.imageUrl} 
               alt={product.name} 
@@ -92,7 +106,14 @@ export function ProductPage() {
         <div className="w-full md:w-1/2 flex flex-col pt-8">
           <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">{product.category}</p>
           <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-[0.2em] mb-4 text-white">{product.name}</h1>
-          <p className="text-2xl font-medium mb-8 text-zinc-300">${product.price}</p>
+          <div className="flex items-center gap-4 mb-8">
+            <p className="text-2xl font-medium text-zinc-300">${product.price}</p>
+            {product.stock !== undefined && (
+               <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 border rounded ${isOutOfStock ? 'border-red-900 text-red-500 bg-red-950/30' : (product.stock < 5 ? 'border-amber-900 text-amber-500 bg-amber-950/30' : 'border-zinc-800 text-zinc-400')}`}>
+                 {isOutOfStock ? 'Sold Out' : `${product.stock} in stock`}
+               </span>
+            )}
+          </div>
 
           <div className="mb-8 font-mono text-sm leading-relaxed text-zinc-400">
             {product.description}
@@ -108,11 +129,13 @@ export function ProductPage() {
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
+                  disabled={isOutOfStock}
                   className={cn(
                     "px-4 py-2 border rounded-full text-[10px] uppercase font-medium transition-colors",
                     selectedSize === size
                       ? "border-zinc-400 bg-white text-black"
-                      : "border-zinc-800 text-white hover:border-zinc-400"
+                      : "border-zinc-800 text-white hover:border-zinc-400",
+                    isOutOfStock && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   {size}
@@ -124,10 +147,10 @@ export function ProductPage() {
           <Button 
             onClick={handleAddToCart}
             size="lg" 
-            className="w-full py-6 text-xs uppercase tracking-widest font-bold rounded-none bg-white text-black hover:bg-zinc-200"
-            disabled={!selectedSize}
+            className="w-full py-6 text-xs uppercase tracking-widest font-bold rounded-none bg-white text-black hover:bg-zinc-200 disabled:opacity-50"
+            disabled={!selectedSize || isOutOfStock}
           >
-            {selectedSize ? 'Add to Cart' : 'Select a Size'}
+            {isOutOfStock ? 'Sold Out' : (selectedSize ? 'Add to Cart' : 'Select a Size')}
           </Button>
 
           <div className="mt-12 border-t border-zinc-800 divide-y divide-zinc-800 text-sm">

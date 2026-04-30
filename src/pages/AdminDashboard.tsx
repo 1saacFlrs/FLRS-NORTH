@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getProducts, addProduct, updateProduct, deleteProduct, uploadImage, Product } from '../lib/api';
+import { getProducts, addProduct, updateProduct, deleteProduct, uploadImageResumable, Product, getCategories, addCategory, deleteCategory, Category } from '../lib/api';
+import { useProcessStore } from '../store/useProcessStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Plus, Pencil, Trash2, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Image as ImageIcon, Eye, EyeOff, Tag, Loader2 } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
@@ -10,10 +11,19 @@ export function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   
+  // Category Form
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  // Process Store
+  const { processes, addProcess, updateProcess, removeProcess, clearCompleted } = useProcessStore();
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -24,9 +34,15 @@ export function AdminDashboard() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('T-Shirts');
   const [sizes, setSizes] = useState<string>('S, M, L, XL');
+  const [stock, setStock] = useState<string>('10');
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [offerActive, setOfferActive] = useState(false);
+  const [offerType, setOfferType] = useState<'color' | 'image'>('color');
+  const [offerValue, setOfferValue] = useState('#ff0000');
+  const [offerEndDate, setOfferEndDate] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -38,8 +54,21 @@ export function AdminDashboard() {
   useEffect(() => {
     if (user) {
       fetchProducts();
+      fetchCategoriesList();
     }
   }, [user]);
+
+  const fetchCategoriesList = async () => {
+    setLoadingCategories(true);
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -72,10 +101,16 @@ export function AdminDashboard() {
     setName('');
     setPrice('');
     setDescription('');
-    setCategory('T-Shirts');
+    if (categories.length > 0) setCategory(categories[0].name);
+    else setCategory('T-Shirts');
     setSizes('S, M, L, XL');
+    setStock('10');
     setImageUrl('');
     setImageFile(null);
+    setOfferActive(false);
+    setOfferType('color');
+    setOfferValue('#ffffff');
+    setOfferEndDate('');
     setIsModalOpen(true);
   };
 
@@ -86,19 +121,86 @@ export function AdminDashboard() {
     setDescription(p.description);
     setCategory(p.category);
     setSizes(p.sizes.join(', '));
+    setStock(p.stock !== undefined ? p.stock.toString() : '0');
     setImageUrl(p.imageUrl);
     setImageFile(null);
+    
+    if (p.offer) {
+      setOfferActive(p.offer.active);
+      setOfferType(p.offer.type === 'none' ? 'color' : p.offer.type);
+      setOfferValue(p.offer.value || '#ffffff');
+      setOfferEndDate(p.offer.endDate || '');
+    } else {
+      setOfferActive(false);
+      setOfferType('color');
+      setOfferValue('#ffffff');
+      setOfferEndDate('');
+    }
+
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
+  const handleDelete = async (p: Product) => {
+    if (confirm(`Are you sure you want to delete ${p.name}?`)) {
+      const processId = Date.now().toString();
+      addProcess({
+        id: processId,
+        name: `Deleting Product: ${p.name}`,
+        status: 'running',
+        createdAt: Date.now(),
+      });
       try {
-        await deleteProduct(id);
-        setProducts(products.filter(p => p.id !== id));
+        await deleteProduct(p.id!);
+        setProducts(products.filter(prod => prod.id !== p.id));
+        updateProcess(processId, { status: 'completed', message: 'Product deleted' });
       } catch (err: any) {
+        updateProcess(processId, { status: 'error', message: err.message });
         alert("Failed to delete: " + err.message);
       }
+    }
+  };
+
+  const handleDeleteCategory = async (c: Category) => {
+    if (confirm(`Delete category "${c.name}"?`)) {
+      const processId = Date.now().toString();
+      addProcess({
+        id: processId,
+        name: `Deleting Category: ${c.name}`,
+        status: 'running',
+        createdAt: Date.now(),
+      });
+      try {
+        await deleteCategory(c.id);
+        fetchCategoriesList();
+        updateProcess(processId, { status: 'completed', message: 'Category deleted' });
+      } catch (e: any) {
+         updateProcess(processId, { status: 'error', message: e.message });
+         alert("Failed: " + e.message);
+      }
+    }
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const catName = newCategoryName.trim();
+    if (!catName) return;
+    
+    const processId = Date.now().toString();
+    addProcess({
+      id: processId,
+      name: `Creating Category: ${catName}`,
+      status: 'running',
+      createdAt: Date.now(),
+    });
+
+    try {
+      await addCategory(catName);
+      setNewCategoryName('');
+      fetchCategoriesList();
+      updateProcess(processId, { status: 'completed', message: 'Category added' });
+    } catch (e: any) {
+      updateProcess(processId, { status: 'error', message: e.message });
+      alert("Failed: " + e.message);
     }
   };
 
@@ -106,24 +208,62 @@ export function AdminDashboard() {
     e.preventDefault();
     setIsSaving(true);
     
+    let isCanceled = false;
+    let cancelUpload: (() => void) | undefined;
+    const processId = Date.now().toString();
+
+    addProcess({
+      id: processId,
+      name: editingId ? `Updating Product: ${name}` : `Creating Product: ${name}`,
+      status: 'running',
+      createdAt: Date.now(),
+      cancel: () => {
+        isCanceled = true;
+        if (cancelUpload) cancelUpload();
+        updateProcess(processId, { status: 'canceled', message: 'Action canceled by admin.' });
+      }
+    });
+
     try {
       let finalImageUrl = imageUrl;
       
       if (imageFile) {
+        updateProcess(processId, { message: 'Uploading image...', progress: 0 });
         try {
-          finalImageUrl = await uploadImage(imageFile);
-        } catch (uploadError) {
+          const { uploadTask, getUrl } = uploadImageResumable(imageFile);
+          
+          cancelUpload = () => {
+            uploadTask.cancel();
+          };
+
+          uploadTask.on('state_changed', (snapshot) => {
+             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+             if (!isCanceled) updateProcess(processId, { progress });
+          });
+
+          finalImageUrl = await getUrl();
+        } catch (uploadError: any) {
+          if (uploadError.code === 'storage/canceled' || isCanceled) {
+             return; // Stop flow
+          }
           console.error("Storage upload failed, please ensure Firebase Storage is configured:", uploadError);
           alert("Failed to upload image to Storage. Please provide a direct URL instead.");
           setIsSaving(false);
+          updateProcess(processId, { status: 'error', message: 'Image upload failed' });
           return;
         }
       }
 
+      if (isCanceled) return;
+
       if (!finalImageUrl) {
         alert("Please provide an image URL or upload an image.");
-        setIsSaving(false); return;
+        setIsSaving(false);
+        updateProcess(processId, { status: 'error', message: 'Missing final image URL' });
+        return;
       }
+
+      updateProcess(processId, { message: 'Saving product data...', progress: undefined });
 
       const productData = {
         name,
@@ -131,7 +271,14 @@ export function AdminDashboard() {
         description,
         category,
         imageUrl: finalImageUrl,
-        sizes: sizes.split(',').map(s => s.trim()).filter(Boolean)
+        sizes: sizes.split(',').map(s => s.trim()).filter(Boolean),
+        stock: parseInt(stock) || 0,
+        offer: {
+          active: offerActive,
+          type: (offerActive ? offerType : 'none') as 'color' | 'image' | 'none',
+          value: offerActive ? offerValue : '',
+          endDate: offerActive ? offerEndDate : ''
+        }
       };
 
       if (editingId) {
@@ -140,12 +287,17 @@ export function AdminDashboard() {
         await addProduct(productData);
       }
       
+      if (isCanceled) return;
+
+      updateProcess(processId, { status: 'completed', message: 'Success' });
       setIsModalOpen(false);
       fetchProducts();
     } catch (err: any) {
+      if (isCanceled) return;
       alert("Save failed: " + err.message);
+      updateProcess(processId, { status: 'error', message: err.message });
     } finally {
-      setIsSaving(false);
+      if (!isCanceled) setIsSaving(false);
     }
   };
 
@@ -161,7 +313,16 @@ export function AdminDashboard() {
             </div>
             <div>
               <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-2">Password</label>
-              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="bg-black border-zinc-800 text-white" />
+              <div className="relative">
+                <Input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required className="bg-black border-zinc-800 text-white pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" className="w-full rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">Login</Button>
           </form>
@@ -178,10 +339,51 @@ export function AdminDashboard() {
       <div className="flex justify-between items-center mb-12">
         <h1 className="text-3xl font-black tracking-[0.2em] uppercase">Admin Dashboard</h1>
         <div className="flex items-center space-x-4">
-          <span className="text-[10px] text-zinc-500 hidden sm:inline-block uppercase tracking-widest">{user.email}</span>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="px-2 py-1 bg-zinc-800 text-[10px] text-white font-bold uppercase tracking-widest rounded">Admin</span>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-widest">{user.email}</span>
+          </div>
           <Button onClick={handleLogout} variant="outline" size="sm" className="rounded-none border-zinc-800 text-zinc-400 hover:text-white uppercase tracking-widest text-[10px]">Logout</Button>
         </div>
       </div>
+
+      {/* Running Processes */}
+      {processes.length > 0 && (
+        <div className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+             <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Background Tasks</h2>
+             <Button variant="outline" size="sm" onClick={clearCompleted} className="rounded-none border-zinc-800 text-zinc-400 hover:text-white uppercase tracking-widest text-[10px]">Clear Completed</Button>
+          </div>
+          <div className="space-y-4">
+             {processes.map((proc) => (
+                <div key={proc.id} className="bg-zinc-900 border border-zinc-800 p-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                   <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                         <span className="font-medium text-sm tracking-widest uppercase">{proc.name}</span>
+                         {proc.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />}
+                         {proc.status === 'completed' && <span className="text-green-500 text-[10px] font-bold uppercase tracking-widest">Done</span>}
+                         {proc.status === 'error' && <span className="text-red-500 text-[10px] font-bold uppercase tracking-widest">Error</span>}
+                         {proc.status === 'canceled' && <span className="text-yellow-500 text-[10px] font-bold uppercase tracking-widest">Canceled</span>}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                         {proc.message || 'Processing...'}
+                      </div>
+                      {proc.progress !== undefined && proc.status === 'running' && (
+                         <div className="w-full bg-zinc-950 h-1 mt-3">
+                            <div className="bg-white h-1 transition-all duration-300" style={{ width: `${proc.progress}%` }}></div>
+                         </div>
+                      )}
+                   </div>
+                   {proc.status === 'running' && proc.cancel && (
+                      <Button variant="destructive" size="sm" onClick={proc.cancel} className="rounded-none uppercase tracking-widest text-[10px] max-w-[100px]">
+                         Cancel
+                      </Button>
+                   )}
+                </div>
+             ))}
+          </div>
+        </div>
+      )}
 
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Products</h2>
@@ -200,6 +402,7 @@ export function AdminDashboard() {
                 <th className="px-6 py-4 font-medium">Product</th>
                 <th className="px-6 py-4 font-medium">Category</th>
                 <th className="px-6 py-4 font-medium">Price</th>
+                <th className="px-6 py-4 font-medium">Stock</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -216,11 +419,12 @@ export function AdminDashboard() {
                   </td>
                   <td className="px-6 py-4 text-zinc-500 text-xs uppercase tracking-widest">{p.category}</td>
                   <td className="px-6 py-4 font-bold text-zinc-300 text-sm">${p.price}</td>
+                  <td className="px-6 py-4 text-xs font-mono text-zinc-400">{p.stock || 0} left</td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <Button onClick={() => openEditModal(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-400 hover:text-white">
                       <Pencil className="w-4 h-4" />
                     </Button>
-                    <Button onClick={() => handleDelete(p.id!)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-600 hover:text-red-500 hover:border-red-900">
+                    <Button onClick={() => handleDelete(p)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-600 hover:text-red-500 hover:border-red-900">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </td>
@@ -233,6 +437,46 @@ export function AdminDashboard() {
           )}
         </div>
       )}
+
+      {/* Categories Management */}
+      <div className="mt-16 mb-6 flex justify-between items-center">
+        <h2 className="text-xl font-bold uppercase tracking-[0.2em]">Categories</h2>
+      </div>
+
+      <div className="bg-black border border-zinc-900 mb-12 p-6 flex flex-col md:flex-row gap-8">
+        <div className="w-full md:w-1/2">
+          {loadingCategories ? (
+            <div className="text-zinc-500 text-xs uppercase tracking-widest">Loading categories...</div>
+          ) : (
+            <ul className="space-y-2">
+              {categories.map(c => (
+                <li key={c.id} className="flex justify-between items-center bg-zinc-900/50 border border-zinc-800 p-3">
+                  <span className="text-sm font-medium tracking-wider uppercase text-zinc-300">{c.name}</span>
+                  <Button onClick={() => handleDeleteCategory(c)} variant="outline" size="icon" className="h-8 w-8 border-zinc-800 text-zinc-600 hover:text-red-500 hover:border-red-900">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </li>
+              ))}
+              {categories.length === 0 && (
+                <div className="text-zinc-600 text-xs uppercase tracking-widest p-4 text-center border border-zinc-800 border-dashed">No categories found.</div>
+              )}
+            </ul>
+          )}
+        </div>
+        <div className="w-full md:w-1/2">
+          <form onSubmit={handleAddCategory} className="space-y-4 bg-zinc-900/30 p-4 border border-zinc-800">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">New Category</label>
+              <div className="flex gap-2">
+                <Input value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="E.g. Sneakers" required className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700 flex-1" />
+                <Button type="submit" className="rounded-none uppercase tracking-widest text-[10px] bg-white text-black hover:bg-zinc-200">
+                  Add
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
@@ -266,11 +510,18 @@ export function AdminDashboard() {
                       <option value="T-Shirts">T-Shirts</option>
                       <option value="Hoodies">Hoodies</option>
                       <option value="Accessories">Accessories</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Sizes (Comma separated)</label>
                     <Input value={sizes} onChange={e => setSizes(e.target.value)} required placeholder="S, M, L, XL" className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Stock</label>
+                    <Input type="number" min="0" value={stock} onChange={e => setStock(e.target.value)} required placeholder="10" className="bg-zinc-900 border-zinc-800 focus-visible:ring-zinc-700" />
                   </div>
                 </div>
                 
@@ -310,6 +561,56 @@ export function AdminDashboard() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Offer Section */}
+              <div className="border border-zinc-800 bg-zinc-900/30 p-4 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-zinc-400" />
+                    <h4 className="text-xs uppercase font-bold tracking-widest">Temporal Offer</h4>
+                  </div>
+                  <label className="flex items-center cursor-pointer">
+                    <div className="relative">
+                      <input type="checkbox" className="sr-only" checked={offerActive} onChange={e => setOfferActive(e.target.checked)} />
+                      <div className={`block w-10 h-6 rounded-full transition-colors ${offerActive ? 'bg-white' : 'bg-zinc-700'}`}></div>
+                      <div className={`dot absolute left-1 top-1 bg-black w-4 h-4 rounded-full transition-transform ${offerActive ? 'transform translate-x-4' : ''}`}></div>
+                    </div>
+                  </label>
+                </div>
+                
+                {offerActive && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-800">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Badge Type</label>
+                      <select 
+                        value={offerType} 
+                        onChange={e => setOfferType(e.target.value as 'color' | 'image')}
+                        className="flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-700 text-white"
+                      >
+                        <option value="color">Color Overlay</option>
+                        <option value="image">PNG Image Overlay</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">
+                        {offerType === 'color' ? 'Color (Hex)' : 'Image URL (Recommend 200x200)'}
+                      </label>
+                      {offerType === 'color' ? (
+                        <div className="flex gap-2">
+                           <input type="color" value={offerValue} onChange={e => setOfferValue(e.target.value)} className="w-10 h-10 rounded border border-zinc-800 cursor-pointer bg-zinc-900" />
+                           <Input value={offerValue} onChange={e => setOfferValue(e.target.value)} placeholder="#ff0000" className="bg-zinc-900 border-zinc-800" />
+                        </div>
+                      ) : (
+                        <Input value={offerValue} onChange={e => setOfferValue(e.target.value)} placeholder="https://..." className="bg-zinc-900 border-zinc-800 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">End Date</label>
+                      <Input type="datetime-local" value={offerEndDate} onChange={e => setOfferEndDate(e.target.value)} required={offerActive} className="bg-zinc-900 border-zinc-800 text-white" />
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="pt-6 border-t border-zinc-900 flex flex-col-reverse sm:flex-row justify-end sm:space-x-4">

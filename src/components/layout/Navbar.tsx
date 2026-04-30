@@ -1,12 +1,27 @@
-import { Link } from 'react-router-dom';
-import { ShoppingCart, Menu, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Menu, X, Heart, User as UserIcon, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useCartStore } from '../../store/useCartStore';
+import { useFavoritesStore } from '../../store/useFavoritesStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { auth } from '../../lib/firebase';
+import { signOut } from 'firebase/auth';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const cartItems = useCartStore((state) => state.items);
   const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const favoriteItems = useFavoritesStore((state) => state.items);
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    // Explicitly clear local stores so the next person logging in doesn't see old items
+    useCartStore.getState().clearCart();
+    useFavoritesStore.setState({ items: [] });
+    navigate('/');
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
@@ -18,7 +33,7 @@ export function Navbar() {
             </Link>
             
             {/* Desktop Menu */}
-            <div className="hidden md:flex gap-8 text-xs font-medium tracking-widest uppercase text-zinc-400">
+            <div className="hidden md:flex gap-8 text-xs font-medium tracking-widest uppercase text-zinc-400 items-center">
               <Link to="/" className="hover:text-white transition-colors">Home</Link>
               <Link to="/shop" className="hover:text-white transition-colors">Shop All</Link>
               <Link to="/admin" className="text-stone-400 border-l border-zinc-800 pl-8 hover:text-white transition-colors">Admin</Link>
@@ -26,6 +41,31 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-6">
+            {user ? (
+              <div className="hidden md:flex gap-6 items-center">
+                <Link to="/orders" className="text-[10px] text-zinc-400 hover:text-white uppercase tracking-widest transition-colors font-bold">Orders</Link>
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest">{user.email}</span>
+                  <button onClick={handleLogout} className="text-zinc-500 hover:text-white transition-colors relative group">
+                     <LogOut className="w-5 h-5" />
+                     <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] bg-zinc-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Log Out</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link to="/login" className="text-zinc-400 hover:text-white transition-colors">
+                <UserIcon className="w-5 h-5 text-white" />
+              </Link>
+            )}
+
+            <Link to="/favorites" className="relative hover:text-zinc-300 transition-colors">
+              <Heart className="w-5 h-5 text-white" />
+              {favoriteItems.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center">
+                  {favoriteItems.length}
+                </span>
+              )}
+            </Link>
             <Link to="/cart" className="relative hover:text-zinc-300 transition-colors">
               <ShoppingCart className="w-5 h-5 text-white" />
               {itemCount > 0 && (
@@ -61,6 +101,31 @@ export function Navbar() {
             >
               Shop All
             </Link>
+            {user ? (
+               <>
+                 <Link 
+                  to="/orders" 
+                  className="block px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Orders
+                </Link>
+                 <button 
+                    onClick={() => { handleLogout(); setIsOpen(false); }}
+                    className="block w-full text-left px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md"
+                 >
+                   Log Out
+                 </button>
+               </>
+            ) : (
+               <Link 
+                to="/login" 
+                className="block px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md"
+                onClick={() => setIsOpen(false)}
+              >
+                Log In
+              </Link>
+            )}
             <Link 
               to="/admin" 
               className="block px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md text-stone-400"

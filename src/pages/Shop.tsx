@@ -1,30 +1,39 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getProducts, Product } from '../lib/api';
+import { getProducts, getCategories, Product, Category } from '../lib/api';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
-
-const CATEGORIES = ['All', 'T-Shirts', 'Hoodies', 'Accessories'];
+import { ProductCard } from '../components/ProductCard';
 
 export function Shop() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getProducts();
-        setProducts(data);
-        setFilteredProducts(data);
+        const [productsData, categoriesData] = await Promise.all([
+          getProducts(),
+          getCategories()
+        ]);
+        setProducts(productsData);
+        setFilteredProducts(productsData);
+        
+        // Dynamically add categories
+        const dynamicCategories = categoriesData.map(c => c.name);
+        const allCategories = ['All', 'T-Shirts', 'Hoodies', 'Accessories', ...dynamicCategories];
+        // Deduplicate
+        setCategories([...new Set(allCategories)]);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -43,13 +52,13 @@ export function Shop() {
           <div>
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4">Categories</h3>
             <ul className="space-y-3 text-sm font-light">
-              {CATEGORIES.map(category => (
+              {categories.map(category => (
                 <li 
                   key={category}
                   onClick={() => setActiveCategory(category)}
                   className={cn(
                     "flex items-center justify-between cursor-pointer transition-colors",
-                    activeCategory === category ? "text-white" : "text-zinc-500 hover:text-white"
+                    activeCategory === category ? "text-white font-medium" : "text-zinc-500 hover:text-white"
                   )}
                 >
                   <span>{category}</span>
@@ -98,23 +107,7 @@ export function Shop() {
                 transition={{ duration: 0.3 }}
                 key={product.id}
               >
-                <Link to={`/product/${product.id}`} className="group cursor-pointer flex flex-col gap-3">
-                  <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden relative">
-                    <div className="absolute inset-0 bg-zinc-800 animate-pulse hidden group-hover:block opacity-20"></div>
-                    <img 
-                      src={product.imageUrl} 
-                      alt={product.name}
-                      className="w-full h-full object-cover object-center grayscale group-hover:grayscale-0 transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="flex justify-between items-start text-white">
-                    <div>
-                      <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1">{product.category}</p>
-                      <h4 className="text-sm font-medium">{product.name}</h4>
-                    </div>
-                    <p className="text-sm font-bold text-zinc-300">${product.price}</p>
-                  </div>
-                </Link>
+                <ProductCard product={product} />
               </motion.div>
             ))}
           </motion.div>

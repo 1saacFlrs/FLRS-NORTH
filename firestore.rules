@@ -33,16 +33,27 @@ service cloud.firestore {
     }
 
     // Product Entity
+    function isValidProductOffer(offer) {
+       // if not active, type/value/endDate could be empty
+       return offer.keys().hasAll(['active', 'type', 'value', 'endDate']) &&
+              offer.active is bool &&
+              offer.type is string && offer.type in ['color', 'image', 'none'] &&
+              offer.value is string && offer.value.size() <= 2000 &&
+              offer.endDate is string;
+    }
+
     function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'createdAt', 'updatedAt']) &&
-             data.keys().size() == 8 &&
+      return data.keys().hasAll(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'stock', 'offer', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 10 &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.price is number && data.price >= 0 &&
              data.description is string && data.description.size() <= 5000 &&
-             data.category is string && data.category in ['T-Shirts', 'Hoodies', 'Accessories'] &&
-             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() <= 1000 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 64 &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() <= 2000 &&
              data.sizes is list && data.sizes.size() >= 0 && data.sizes.size() <= 10 &&
              ((data.sizes.size() > 0 && data.sizes[0] is string) || data.sizes.size() == 0) &&
+             data.stock is number && data.stock >= 0 &&
+             isValidProductOffer(data.offer) &&
              data.createdAt is timestamp &&
              data.updatedAt is timestamp;
     }
@@ -64,9 +75,24 @@ service cloud.firestore {
                        isValidProduct(incoming()) &&
                        incoming().createdAt == existing().createdAt &&
                        incoming().updatedAt == request.time &&
-                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'updatedAt']);
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'description', 'category', 'imageUrl', 'sizes', 'stock', 'offer', 'updatedAt']);
 
       allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // Categories Collection
+    function isValidCategory(data) {
+       return data.keys().hasAll(['id', 'name', 'createdAt']) &&
+              data.id is string && data.id.size() <= 128 &&
+              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+              data.createdAt is timestamp;
+    }
+
+    match /categories/{categoryId} {
+       allow get, list: if true;
+       allow create: if isAdmin() && isValidId(categoryId) && isValidCategory(incoming()) && incoming().createdAt == request.time;
+       allow update: if isAdmin() && isValidId(categoryId) && isValidCategory(incoming()) && incoming().createdAt == existing().createdAt && incoming().diff(existing()).affectedKeys().hasOnly(['name']);
+       allow delete: if isAdmin() && isValidId(categoryId);
     }
 
     // Admins Collection
@@ -82,6 +108,66 @@ service cloud.firestore {
 
       allow update: if false; // Immutable
       allow delete: if isSignedIn() && request.auth.token.email == 'isaacjaredmorenoflores@gmail.com' && isValidId(adminId);
+    }
+
+    // User Profile Validation
+    function isValidCartItem(item) {
+      return item.keys().hasAll(['id', 'name', 'price', 'imageUrl', 'size', 'quantity']) &&
+             item.id is string && item.id.size() <= 128 &&
+             item.name is string && item.name.size() <= 128 &&
+             item.price is number &&
+             item.imageUrl is string && item.imageUrl.size() <= 500 &&
+             item.size is string && item.size.size() <= 64 &&
+             item.quantity is number;
+    }
+
+    function isValidFavorites(favs) {
+      return favs is list && favs.size() <= 200;
+    }
+
+    function isValidCart(cart) {
+      return cart is list && cart.size() <= 100 && (cart.size() == 0 || isValidCartItem(cart[0]));
+    }
+
+    function isValidOrder(order) {
+       return order.keys().hasAll(['id', 'items', 'total', 'status', 'createdAt']) &&
+              order.id is string &&
+              order.items is list &&
+              order.total is number &&
+              order.status is string && order.status in ['processing', 'shipped', 'delivered'] &&
+              order.createdAt is string;
+    }
+
+    function isValidOrders(ordersArg) {
+      return ordersArg is list && ordersArg.size() <= 1000 && (ordersArg.size() == 0 || isValidOrder(ordersArg[0]));
+    }
+
+    function isValidUserProfile(data) {
+       return data.keys().hasAll(['email', 'cart', 'favorites', 'orders', 'createdAt']) &&
+              data.email is string && data.email.size() <= 200 &&
+              isValidCart(data.cart) &&
+              isValidFavorites(data.favorites) &&
+              isValidOrders(data.orders) &&
+              data.createdAt is timestamp;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().createdAt == request.time;
+                       
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['cart', 'favorites', 'orders']);
+                       
+      allow delete: if false;
     }
   }
 }

@@ -31,6 +31,14 @@
           "items": { "type": "string" },
           "description": "Available sizes"
         },
+        "stock": {
+          "type": "number",
+          "description": "Total stock available"
+        },
+        "offer": {
+          "$ref": "#/entities/ProductOffer",
+          "description": "Any active temporary offer"
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -42,7 +50,7 @@
           "description": "Timestamp of last update"
         }
       },
-      "required": ["name", "price", "description", "category", "imageUrl", "sizes", "createdAt", "updatedAt"]
+      "required": ["name", "price", "description", "category", "imageUrl", "sizes", "stock", "offer", "createdAt", "updatedAt"]
     },
     "AdminConfig": {
       "title": "Admin Configuration",
@@ -55,6 +63,82 @@
         }
       },
       "required": ["email"]
+    },
+    "Category": {
+      "title": "Category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "createdAt"]
+    },
+    "ProductOffer": {
+      "title": "Product Offer",
+      "type": "object",
+      "properties": {
+        "active": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["color", "image"] },
+        "value": { "type": "string" },
+        "endDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["active", "type", "value", "endDate"]
+    },
+    "CartItem": {
+      "title": "Cart Item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "size": { "type": "string" },
+        "quantity": { "type": "number" }
+      },
+      "required": ["id", "name", "price", "imageUrl", "size", "quantity"]
+    },
+    "Order": {
+      "title": "Order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/entities/CartItem" }
+        },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["processing", "shipped", "delivered"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "items", "total", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User specific data like favorites and cart",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "cart": {
+          "type": "array",
+          "items": { "$ref": "#/entities/CartItem" }
+        },
+        "favorites": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "orders": {
+          "type": "array",
+          "items": { "$ref": "#/entities/Order" }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "cart", "favorites", "orders", "createdAt"]
     }
   },
   "firestore": {
@@ -69,6 +153,18 @@
         "$ref": "#/entities/AdminConfig"
       },
       "description": "Contains documents for users who have admin access"
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Contains profiles for all registered users, including their cart and favorites"
+    },
+    "/categories/{categoryId}": {
+      "schema": {
+        "$ref": "#/entities/Category"
+      },
+      "description": "Contains product categories"
     }
   }
 }

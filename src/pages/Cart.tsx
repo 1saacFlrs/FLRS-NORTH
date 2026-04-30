@@ -1,13 +1,34 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
 import { Button } from '../components/ui/button';
 import { Trash2, Plus, Minus } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
+import { useOrdersStore } from '../store/useOrdersStore';
 
 export function Cart() {
-  const { items, removeItem, updateQuantity, getCartTotal } = useCartStore();
+  const { items, removeItem, updateQuantity, getCartTotal, clearCart } = useCartStore();
+  const { user } = useAuthStore();
+  const { addOrder } = useOrdersStore();
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
-    alert("Checkout functionality would be implemented here (e.g. Stripe checkout).");
+    if (!user) {
+      alert("Please log in to checkout");
+      navigate('/login');
+      return;
+    }
+
+    const order = {
+      id: Math.random().toString(36).substr(2, 9),
+      items: [...items],
+      total: getCartTotal(),
+      status: 'processing' as const,
+      createdAt: new Date().toISOString()
+    };
+
+    addOrder(order);
+    clearCart();
+    navigate('/orders');
   };
 
   if (items.length === 0) {

@@ -1,6 +1,13 @@
-import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, limit, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, limit, orderBy } from 'firebase/firestore';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
+
+export interface ProductOffer {
+  active: boolean;
+  type: 'color' | 'image' | 'none';
+  value: string;
+  endDate: string;
+}
 
 export interface Product {
   id?: string;
@@ -10,14 +17,59 @@ export interface Product {
   category: string;
   imageUrl: string;
   sizes: string[];
+  stock: number;
+  offer: ProductOffer;
   createdAt?: any;
   updatedAt?: any;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  createdAt?: any;
+}
+
+export interface Order {
+  id: string;
+  items: any[];
+  total: number;
+  status: 'processing' | 'shipped' | 'delivered';
+  createdAt: string;
+}
+
+export interface UserProfile {
+  email: string;
+  cart: any[];
+  favorites: string[];
+  orders: Order[];
+  createdAt?: any;
 }
 
 export const getProducts = async (): Promise<Product[]> => {
   const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+};
+
+export const getCategories = async (): Promise<Category[]> => {
+  const q = query(collection(db, 'categories'), orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+};
+
+export const addCategory = async (name: string) => {
+  const docRef = doc(collection(db, 'categories'));
+  const id = docRef.id;
+  await setDoc(docRef, {
+    id,
+    name,
+    createdAt: serverTimestamp()
+  });
+  return id;
+};
+
+export const deleteCategory = async (id: string) => {
+  await deleteDoc(doc(db, 'categories', id));
 };
 
 export const getFeaturedProducts = async (): Promise<Product[]> => {
@@ -58,4 +110,41 @@ export const uploadImage = async (file: File): Promise<string> => {
   const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
   await uploadBytes(storageRef, file);
   return await getDownloadURL(storageRef);
+};
+
+export const uploadImageResumable = (file: File) => {
+  const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+  const uploadTask = uploadBytesResumable(storageRef, file);
+
+  const getUrl = async () => {
+    await uploadTask;
+    return await getDownloadURL(storageRef);
+  };
+
+  return { uploadTask, getUrl };
+};
+
+export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const docRef = doc(db, 'users', userId);
+  const snapshot = await getDoc(docRef);
+  if (snapshot.exists()) {
+    return snapshot.data() as UserProfile;
+  }
+  return null;
+};
+
+export const createUserProfile = async (userId: string, email: string) => {
+  const docRef = doc(db, 'users', userId);
+  await setDoc(docRef, {
+    email,
+    cart: [],
+    favorites: [],
+    orders: [],
+    createdAt: serverTimestamp(),
+  });
+};
+
+export const updateUserProfileData = async (userId: string, updates: { cart?: any[], favorites?: string[], orders?: Order[] }) => {
+  const docRef = doc(db, 'users', userId);
+  await updateDoc(docRef, updates);
 };

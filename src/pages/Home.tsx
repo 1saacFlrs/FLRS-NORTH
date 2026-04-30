@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Button } from '../components/ui/button';
 import { getFeaturedProducts, Product } from '../lib/api';
+import { ProductCard } from '../components/ProductCard';
 
 export function Home() {
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -93,24 +94,7 @@ export function Home() {
         ) : featured.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {featured.map((product) => (
-              <Link key={product.id} to={`/product/${product.id}`} className="group cursor-pointer flex flex-col gap-3">
-                <div className="aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden relative">
-                  <div className="absolute inset-0 bg-zinc-800 animate-pulse hidden group-hover:block opacity-20 transition-all"></div>
-                  <img 
-                    src={product.imageUrl} 
-                    alt={product.name}
-                    className="w-full h-full object-cover object-center grayscale group-hover:grayscale-0 transition-all duration-700"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                </div>
-                <div className="flex justify-between items-start text-white">
-                  <div>
-                    <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1">{product.category}</p>
-                    <h4 className="text-sm font-medium">{product.name}</h4>
-                  </div>
-                  <p className="font-bold text-sm text-zinc-300">${product.price}</p>
-                </div>
-              </Link>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
