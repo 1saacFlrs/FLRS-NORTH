@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
-import { User, MapPin, Package, Phone, CheckCircle2, AlertCircle, Trash2, FileText } from 'lucide-react';
+import { User, MapPin, Package, Phone, CheckCircle2, AlertCircle, Trash2, FileText, Printer } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useOrdersStore } from '../store/useOrdersStore';
 
@@ -16,18 +16,17 @@ export function Profile() {
   const [activeTab, setActiveTab] = useState<'profile' | 'shipping' | 'orders'>('profile');
   
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [code, setCode] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
   const [phoneError, setPhoneError] = useState('');
 
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     address: '',
-    city: '',
-    state: '',
+    exteriorNumber: '',
+    reference: '',
+    city: 'Acuña',
+    state: 'Coahuila',
     zipCode: '',
-    country: ''
+    country: 'Mexico'
   });
   
   const [isSaving, setIsSaving] = useState(false);
@@ -49,10 +48,14 @@ export function Profile() {
           const data = userDoc.data();
           if (data.phoneNumber) {
             setPhoneNumber(data.phoneNumber);
-            setPhoneVerified(true);
           }
           if (data.shippingInfo) {
-            setShippingInfo(data.shippingInfo);
+            setShippingInfo({
+              ...data.shippingInfo,
+              city: 'Acuña',
+              state: 'Coahuila',
+              country: 'Mexico'
+            });
           }
         }
       } catch (err) {
@@ -63,37 +66,26 @@ export function Profile() {
     fetchProfile();
   }, [user, navigate]);
 
-  const handleSendCode = () => {
+  const handleSavePhone = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
       setPhoneError('Please enter a valid phone number');
       return;
     }
     setPhoneError('');
-    // Simulate sending SMS code
-    setIsVerifying(true);
-    setSaveMessage('Verification code sent to ' + phoneNumber);
-    setTimeout(() => setSaveMessage(''), 3000);
-  };
-
-  const handleVerifyCode = async () => {
-    if (code !== '123456') {
-      setPhoneError('Invalid code. Try 123456');
-      return;
-    }
-    setPhoneError('');
-    setPhoneVerified(true);
-    setIsVerifying(false);
     
     // Save to Firestore
     if (user) {
+      setIsSaving(true);
       try {
          await updateDoc(doc(db, 'users', user.uid), {
            phoneNumber
          });
-         setSaveMessage('Phone number verified successfully');
+         setSaveMessage('Phone number saved successfully');
          setTimeout(() => setSaveMessage(''), 3000);
       } catch (err) {
          handleFirestoreError(err, OperationType.UPDATE, 'users');
+      } finally {
+        setIsSaving(false);
       }
     }
   };
@@ -174,49 +166,21 @@ export function Profile() {
                     <p className="text-[10px] text-zinc-500 mt-2 uppercase tracking-widest">Email cannot be changed</p>
                   </div>
 
-                  <div>
+                     <div>
                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Phone Number</label>
                      {phoneError && <div className="text-red-400 text-[10px] uppercase tracking-widest mb-2 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {phoneError}</div>}
                      <div className="flex flex-col sm:flex-row gap-4">
                         <Input 
                           type="tel" 
                           value={phoneNumber} 
-                          onChange={(e) => {
-                             setPhoneNumber(e.target.value);
-                             if (phoneVerified) setPhoneVerified(false);
-                          }}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
                           placeholder="+1 (555) 000-0000" 
                           className="bg-black border-zinc-800 text-white flex-1"
                         />
-                        {!phoneVerified && !isVerifying && (
-                           <Button type="button" onClick={handleSendCode} className="rounded-none tracking-widest uppercase bg-zinc-800 text-white hover:bg-zinc-700 h-10 w-full sm:w-auto">
-                             Verify
-                           </Button>
-                        )}
-                        {phoneVerified && (
-                          <div className="h-10 px-4 border border-green-800 bg-green-900/20 text-green-400 flex items-center gap-2 text-xs uppercase tracking-widest font-bold">
-                            <CheckCircle2 className="w-4 h-4" /> Verified
-                          </div>
-                        )}
+                        <Button type="button" disabled={isSaving} onClick={handleSavePhone} className="rounded-none tracking-widest uppercase bg-zinc-800 text-white hover:bg-zinc-700 h-10 w-full sm:w-auto px-8">
+                             {isSaving ? 'Saving...' : 'Save'}
+                        </Button>
                      </div>
-
-                     {isVerifying && !phoneVerified && (
-                       <div className="mt-4 p-4 border border-zinc-800 bg-black">
-                         <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2 text-center">Enter 6-Digit Code</label>
-                         <div className="flex gap-4">
-                           <Input 
-                             type="text" 
-                             value={code} 
-                             onChange={(e) => setCode(e.target.value)}
-                             placeholder="123456" 
-                             className="bg-zinc-900 border-zinc-800 text-center tracking-[0.5em] font-mono text-white h-10 flex-1"
-                           />
-                           <Button type="button" onClick={handleVerifyCode} className="rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200 h-10 w-full sm:w-auto">
-                             Confirm
-                           </Button>
-                         </div>
-                       </div>
-                     )}
                   </div>
                 </div>
              </motion.div>
@@ -225,33 +189,47 @@ export function Profile() {
            {activeTab === 'shipping' && (
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-4">
                <h2 className="text-xl font-bold uppercase tracking-widest mb-8 border-b border-zinc-800 pb-4">Shipping Address</h2>
-               <form onSubmit={handleSaveShipping} className="max-w-lg space-y-4">
+                <form onSubmit={handleSaveShipping} className="max-w-lg space-y-4">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Full Name</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Nombre Completo</label>
                     <Input required value={shippingInfo.fullName} onChange={e => setShippingInfo({...shippingInfo, fullName: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Street Address</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Dirección de Calle</label>
                     <Input required value={shippingInfo.address} onChange={e => setShippingInfo({...shippingInfo, address: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">City</label>
-                      <Input required value={shippingInfo.city} onChange={e => setShippingInfo({...shippingInfo, city: e.target.value})} className="bg-black border-zinc-800 text-white" />
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Número Exterior</label>
+                      <Input required value={shippingInfo.exteriorNumber} onChange={e => setShippingInfo({...shippingInfo, exteriorNumber: e.target.value})} className="bg-black border-zinc-800 text-white" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">State / Province</label>
-                      <Input required value={shippingInfo.state} onChange={e => setShippingInfo({...shippingInfo, state: e.target.value})} className="bg-black border-zinc-800 text-white" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Zip / Postal Code</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Código Postal</label>
                       <Input required value={shippingInfo.zipCode} onChange={e => setShippingInfo({...shippingInfo, zipCode: e.target.value})} className="bg-black border-zinc-800 text-white" />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de la casa</label>
+                    <Input required value={shippingInfo.reference} onChange={e => setShippingInfo({...shippingInfo, reference: e.target.value})} placeholder="Color de casa, portón, de 2 pisos, etc." className="bg-black border-zinc-800 text-white" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Country</label>
-                      <Input required value={shippingInfo.country} onChange={e => setShippingInfo({...shippingInfo, country: e.target.value})} className="bg-black border-zinc-800 text-white" />
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Ciudad</label>
+                      <select required value={shippingInfo.city} onChange={e => setShippingInfo({...shippingInfo, city: e.target.value})} className="w-full bg-black border border-zinc-800 text-white h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700">
+                        <option value="Acuña">Acuña</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Estado</label>
+                      <select required value={shippingInfo.state} onChange={e => setShippingInfo({...shippingInfo, state: e.target.value})} className="w-full bg-black border border-zinc-800 text-white h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700">
+                        <option value="Coahuila">Coahuila</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">País</label>
+                      <select required value={shippingInfo.country} onChange={e => setShippingInfo({...shippingInfo, country: e.target.value})} className="w-full bg-black border border-zinc-800 text-white h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700">
+                        <option value="Mexico">México</option>
+                      </select>
                     </div>
                   </div>
                   <div className="pt-4">
@@ -304,9 +282,23 @@ export function Profile() {
                               onClick={() => navigate(`/invoice/${order.id}`)}
                               className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-white text-black hover:bg-zinc-200 h-8 rounded-none border border-transparent"
                             >
-                              <FileText className="w-3 h-3 mr-1" /> Invoice
+                              <FileText className="w-3 h-3 mr-1" /> Visualizar
                             </Button>
                             
+                            <Button 
+                              onClick={() => {
+                                const newWindow = window.open(`/invoice/${order.id}`, '_blank');
+                                if (newWindow) {
+                                  newWindow.onload = () => {
+                                    newWindow.print();
+                                  };
+                                }
+                              }}
+                              className="flex-1 md:flex-none text-[10px] uppercase tracking-widest bg-zinc-800 text-white hover:bg-zinc-700 h-8 rounded-none border border-transparent"
+                            >
+                              <Printer className="w-3 h-3 md:mr-1" /> <span className="hidden md:inline">Imprimir</span>
+                            </Button>
+
                             <Button
                               onClick={() => {
                                 if (confirm('Are you sure you want to cancel this order?')) {

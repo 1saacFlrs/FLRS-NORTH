@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/useCartStore';
 import { Button } from '../components/ui/button';
-import { Trash2, Plus, Minus, Loader2 } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { Trash2, Plus, Minus, Loader2, User as UserIcon, MapPin } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useOrdersStore } from '../store/useOrdersStore';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export function Cart() {
   const { items, removeItem, updateQuantity, getCartTotal, clearCart } = useCartStore();
@@ -14,43 +15,79 @@ export function Cart() {
   const { addOrder } = useOrdersStore();
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [customerData, setCustomerData] = useState({
+    phone: '',
+    fullName: '',
+    address: '',
+    exteriorNumber: '',
+    reference: '',
+    city: 'Acuña',
+    state: 'Coahuila',
+    zipCode: '',
+    country: 'Mexico'
+  });
 
-  const handleCheckout = async () => {
+  useEffect(() => {
+    if (user && showCheckoutForm) {
+      const fetchUserData = async () => {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            let newData = { ...customerData };
+            if (data.phoneNumber) newData.phone = data.phoneNumber;
+            if (data.shippingInfo) {
+              newData = {
+                ...newData,
+                ...data.shippingInfo,
+                city: 'Acuña',
+                state: 'Coahuila',
+                country: 'Mexico'
+              };
+            }
+            setCustomerData(newData);
+          }
+        } catch (err) {
+          console.error("Error fetching user data", err);
+        }
+      };
+      fetchUserData();
+    }
+  }, [user, showCheckoutForm]);
+
+  const handleInitialCheckout = () => {
     if (!user) {
       alert("Please log in to checkout");
       navigate('/login');
+      return;
+    }
+    setShowCheckoutForm(true);
+  };
+
+  const handleFinalCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (!customerData.phone || !customerData.fullName || !customerData.address || !customerData.exteriorNumber || !customerData.zipCode) {
+      alert("Please fill in all mandatory fields.");
       return;
     }
 
     setIsCheckingOut(true);
 
     try {
-      let customerData: any = {
-        email: user.email || '',
-        phone: '',
-        fullName: '',
-        address: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: ''
-      };
+      // Save it back to profile
+      await updateDoc(doc(db, 'users', user.uid), {
+        phoneNumber: customerData.phone,
+        shippingInfo: customerData
+      });
 
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.phoneNumber) customerData.phone = data.phoneNumber;
-          if (data.shippingInfo) {
-            customerData = {
-              ...customerData,
-              ...data.shippingInfo
-            };
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching user data", err);
-      }
+      const orderCustomerData = {
+        email: user.email || '',
+        ...customerData
+      };
 
       const order = {
         id: Math.random().toString(36).substr(2, 9),
@@ -58,12 +95,15 @@ export function Cart() {
         total: getCartTotal(),
         status: 'processing' as const,
         createdAt: new Date().toISOString(),
-        customerData
+        customerData: orderCustomerData
       };
 
       addOrder(order);
       clearCart();
       navigate(`/invoice/${order.id}`);
+    } catch (err) {
+      console.error(err);
+      alert('Error placing order');
     } finally {
       setIsCheckingOut(false);
     }
@@ -151,15 +191,86 @@ export function Cart() {
               <span className="font-bold uppercase tracking-[0.2em] text-sm text-white">Total</span>
               <span className="font-bold text-xl text-white">${getCartTotal().toFixed(2)}</span>
             </div>
-            <Button 
-              onClick={handleCheckout}
-              disabled={isCheckingOut}
-              size="lg" 
-              className="w-full py-6 rounded-none bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-xs font-bold"
-            >
-              {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {isCheckingOut ? 'Processing...' : 'Checkout'}
-            </Button>
+            
+            {!showCheckoutForm ? (
+              <Button 
+                onClick={handleInitialCheckout}
+                size="lg" 
+                className="w-full py-6 rounded-none bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-xs font-bold"
+              >
+                Proceed to Checkout
+              </Button>
+            ) : (
+              <form onSubmit={handleFinalCheckout} className="space-y-4 border-t border-zinc-800 pt-6 mt-6">
+                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-500 mb-4">Complete Contact & Shipping Info</h3>
+                
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">WhatsApp / Teléfono</label>
+                  <Input required type="tel" value={customerData.phone} onChange={e => setCustomerData({...customerData, phone: e.target.value})} className="bg-black border-zinc-800 text-white" placeholder="+1 (555) 000-0000" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Nombre Completo</label>
+                  <Input required value={customerData.fullName} onChange={e => setCustomerData({...customerData, fullName: e.target.value})} className="bg-black border-zinc-800 text-white" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Dirección de Calle</label>
+                  <Input required value={customerData.address} onChange={e => setCustomerData({...customerData, address: e.target.value})} className="bg-black border-zinc-800 text-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Número Exterior</label>
+                    <Input required value={customerData.exteriorNumber} onChange={e => setCustomerData({...customerData, exteriorNumber: e.target.value})} className="bg-black border-zinc-800 text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Código Postal</label>
+                    <Input required value={customerData.zipCode} onChange={e => setCustomerData({...customerData, zipCode: e.target.value})} className="bg-black border-zinc-800 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de casa</label>
+                  <Input required value={customerData.reference} onChange={e => setCustomerData({...customerData, reference: e.target.value})} placeholder="Color, portón, etc." className="bg-black border-zinc-800 text-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Ciudad</label>
+                    <select required value={customerData.city} onChange={e => setCustomerData({...customerData, city: e.target.value})} className="w-full bg-black border border-zinc-800 text-white h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700">
+                      <option value="Acuña">Acuña</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Estado</label>
+                    <select required value={customerData.state} onChange={e => setCustomerData({...customerData, state: e.target.value})} className="w-full bg-black border border-zinc-800 text-white h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700">
+                      <option value="Coahuila">Coahuila</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                   <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">País</label>
+                   <select required value={customerData.country} onChange={e => setCustomerData({...customerData, country: e.target.value})} className="w-full bg-black border border-zinc-800 text-white h-10 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700">
+                     <option value="Mexico">México</option>
+                   </select>
+                </div>
+
+                <div className="pt-4 flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowCheckoutForm(false)} 
+                    className="flex-1 rounded-none border-zinc-800 text-zinc-400 hover:text-white uppercase tracking-widest text-[10px]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isCheckingOut} 
+                    className="flex-1 rounded-none bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-[10px] font-bold"
+                  >
+                    {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {isCheckingOut ? 'Processing...' : 'Confirm Order'}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

@@ -42,6 +42,8 @@ export interface Order {
     phone: string;
     fullName: string;
     address: string;
+    exteriorNumber?: string;
+    reference?: string;
     city: string;
     state: string;
     zipCode: string;

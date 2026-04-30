@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useOrdersStore } from '../store/useOrdersStore';
 import { Button } from '../components/ui/button';
-import { Building2, MessageCircle, Mail, Printer } from 'lucide-react';
+import { Download, Building2, MessageCircle, Mail, Printer } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -57,9 +57,19 @@ export function Invoice() {
 
   return (
     <div className="max-w-4xl mx-auto px-8 py-12 text-white mt-12 md:mt-20">
-      <div className="flex justify-end mb-4 print:hidden">
+      
+      <div className="bg-amber-950/30 border border-amber-900/50 p-4 mb-8 print:hidden text-center">
+        <p className="text-amber-500 font-bold uppercase tracking-widest text-xs">
+          ⚠️ ESTE DOCUMENTO DEBE SER ENVIADO AL PROVEEDOR PARA PROCEDER CON LA COMPRA Y ENVÍO.
+        </p>
+      </div>
+
+      <div className="flex justify-end gap-2 mb-8 print:hidden">
          <Button onClick={() => window.print()} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs">
-           <Printer className="w-4 h-4 mr-2" /> Print / Save PDF
+           <Download className="w-4 h-4 mr-2" /> PDF / Descargar
+         </Button>
+         <Button onClick={() => window.print()} variant="outline" className="rounded-none tracking-widest uppercase border-zinc-800 hover:bg-zinc-900 text-xs text-white">
+           <Printer className="w-4 h-4 mr-2" /> Imprimir
          </Button>
       </div>
 
@@ -86,7 +96,8 @@ export function Invoice() {
             <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Shipping Address</h2>
             {order.customerData.address ? (
               <>
-                <p className="text-xs tracking-widest text-zinc-300 mb-1">{order.customerData.address}</p>
+                <p className="text-xs tracking-widest text-zinc-300 mb-1">{order.customerData.address} {order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
+                {order.customerData.reference && <p className="text-xs tracking-widest text-zinc-400 italic mb-1">Ref: {order.customerData.reference}</p>}
                 <p className="text-xs tracking-widest text-zinc-400">{order.customerData.city}, {order.customerData.state} {order.customerData.zipCode}</p>
                 <p className="text-xs tracking-widest text-zinc-400 mt-1">{order.customerData.country}</p>
               </>
