@@ -62,8 +62,11 @@ export function AdminDashboard() {
   const [isSavingSocial, setIsSavingSocial] = useState(false);
   const [socialSaveMessage, setSocialSaveMessage] = useState('');
 
+  const DEFAULT_SHIPPING = "Envíos / Shipping:\nEnvío gratuito en compras de 3 o más productos. Para pedidos menores, el costo de envío es de $35 MXN.\n\nDevoluciones / Returns:\nSólo se aceptan devoluciones por artículos dañados. Todos nuestros productos atraviesan una rigurosa inspección de calidad previa a su envío.";
+  const DEFAULT_MATERIALS = "100% Premium Heavyweight Cotton. Wash cold, lay flat to dry to prevent shrinkage.";
+
   // Product Text state
-  const [productText, setProductText] = useState({ shippingReturns: '', materialsCare: '' });
+  const [productText, setProductText] = useState({ shippingReturns: DEFAULT_SHIPPING, materialsCare: DEFAULT_MATERIALS });
   const [isSavingProductText, setIsSavingProductText] = useState(false);
   const [productTextSaveMessage, setProductTextSaveMessage] = useState('');
 
@@ -131,8 +134,8 @@ export function AdminDashboard() {
       if (productTextSnap.exists()) {
         const data = productTextSnap.data();
         setProductText({
-          shippingReturns: data.shippingReturns || '',
-          materialsCare: data.materialsCare || ''
+          shippingReturns: data.shippingReturns || DEFAULT_SHIPPING,
+          materialsCare: data.materialsCare || DEFAULT_MATERIALS
         });
       }
     } catch (err) {
@@ -706,7 +709,7 @@ export function AdminDashboard() {
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Shipping & Returns</label>
               <textarea 
-                rows={5}
+                rows={8}
                 value={productText.shippingReturns} 
                 onChange={e => setProductText({...productText, shippingReturns: e.target.value})} 
                 placeholder="Shipping and return policies..."

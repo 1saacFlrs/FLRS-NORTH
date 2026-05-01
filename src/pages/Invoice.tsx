@@ -45,6 +45,11 @@ export function Invoice() {
     );
   }
 
+  const totalItemsCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const computedSubtotal = order.subtotal ?? order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const computedShipping = order.shippingCost ?? (totalItemsCount >= 3 ? 0 : 35);
+  const computedTotal = order.subtotal ? order.total : (computedSubtotal + computedShipping);
+
   const handleWhatsApp = () => {
     if (!providerInfo?.phone) return;
     const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price.toFixed(2)} MXN`).join('%0A');
@@ -134,7 +139,7 @@ export function Invoice() {
         filename:     `Invoice-${order.id}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as 'portrait' | 'landscape' }
       };
       
       const element = document.createElement('div');

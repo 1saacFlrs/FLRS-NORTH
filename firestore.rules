@@ -109,8 +109,8 @@ service cloud.firestore {
                             incoming().get('name', '') is string;
     }
 
-    // Social Links
-    match /settings/social {
+    // Settings
+    match /settings/{settingId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }

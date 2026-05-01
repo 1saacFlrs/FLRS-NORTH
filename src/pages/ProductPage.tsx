@@ -262,28 +262,15 @@ export function ProductPage() {
           <div className="mt-12 border-t border-zinc-800 divide-y divide-zinc-800 text-sm">
             <div className="py-4">
               <h4 className="font-bold uppercase tracking-[0.2em] mb-4 text-white">Shipping & Returns</h4>
-              {productText.shippingReturns ? (
-                <p className="text-zinc-500 font-light text-xs whitespace-pre-wrap">{productText.shippingReturns}</p>
-              ) : (
-                <>
-                  <p className="text-zinc-500 font-light text-xs mb-3">
-                    <strong className="text-zinc-400 font-medium tracking-wide">Envíos / Shipping:</strong><br/>
-                    Envío gratuito en compras de 3 o más productos. Para pedidos menores, el costo de envío es de $35 MXN.
-                  </p>
-                  <p className="text-zinc-500 font-light text-xs">
-                    <strong className="text-zinc-400 font-medium tracking-wide">Devoluciones / Returns:</strong><br/>
-                    Sólo se aceptan devoluciones por artículos dañados. Todos nuestros productos atraviesan una rigurosa inspección de calidad previa a su envío.
-                  </p>
-                </>
-              )}
+              <p className="text-zinc-500 font-light text-xs whitespace-pre-wrap">
+                {productText.shippingReturns || "Envíos / Shipping:\nEnvío gratuito en compras de 3 o más productos. Para pedidos menores, el costo de envío es de $35 MXN.\n\nDevoluciones / Returns:\nSólo se aceptan devoluciones por artículos dañados. Todos nuestros productos atraviesan una rigurosa inspección de calidad previa a su envío."}
+              </p>
             </div>
             <div className="py-4">
               <h4 className="font-bold uppercase tracking-[0.2em] mb-2 text-white">Materials & Care</h4>
-              {productText.materialsCare ? (
-                <p className="text-zinc-500 font-light text-xs whitespace-pre-wrap">{productText.materialsCare}</p>
-              ) : (
-                <p className="text-zinc-500 font-light text-xs">100% Premium Heavyweight Cotton. Wash cold, lay flat to dry to prevent shrinkage.</p>
-              )}
+              <p className="text-zinc-500 font-light text-xs whitespace-pre-wrap">
+                {productText.materialsCare || "100% Premium Heavyweight Cotton. Wash cold, lay flat to dry to prevent shrinkage."}
+              </p>
             </div>
           </div>
         </div>
