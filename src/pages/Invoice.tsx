@@ -47,6 +47,8 @@ export function Invoice() {
 
   const totalItemsCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
   const computedSubtotal = order.subtotal ?? order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const computedBaseSubtotal = order.items.reduce((sum, item) => sum + ((item.basePrice || item.price) * item.quantity), 0);
+  const computedSavings = computedBaseSubtotal - computedSubtotal;
   const computedShipping = order.shippingCost ?? (totalItemsCount >= 3 ? 0 : 35);
   const computedTotal = order.subtotal ? order.total : (computedSubtotal + computedShipping);
 
@@ -117,10 +119,12 @@ export function Invoice() {
           <div style="margin-bottom: 40px;">
             <h3 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">Order Items</h3>
             ${itemsHtml}
-            <div style="text-align: right; margin-top: 20px;">
-              <p style="margin: 0; font-size: 12px; text-transform: uppercase; color: #555;">Subtotal: $${computedSubtotal.toFixed(2)} MXN</p>
-              <p style="margin: 5px 0 10px 0; font-size: 12px; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px;">Shipping: ${computedShipping === 0 ? 'FREE' : `$${computedShipping.toFixed(2)} MXN`}</p>
-              <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">Total: $${computedTotal.toFixed(2)} MXN</h2>
+            <div style="text-align: right; margin-top: 20px; border-top: 1px solid #000; pt: 15px;">
+              <p style="margin: 0; font-size: 11px; text-transform: uppercase; color: #777;">Original Subtotal: $${computedBaseSubtotal.toFixed(2)} MXN</p>
+              ${computedSavings > 0 ? `<p style="margin: 4px 0; font-size: 11px; text-transform: uppercase; color: #16a34a; font-weight: bold;">Discount: -$${computedSavings.toFixed(2)} MXN</p>` : ''}
+              <p style="margin: 4px 0; font-size: 12px; text-transform: uppercase; color: #000; font-weight: bold;">Subtotal: $${computedSubtotal.toFixed(2)} MXN</p>
+              <p style="margin: 4px 0 10px 0; font-size: 11px; text-transform: uppercase; color: #777; padding-bottom: 10px; border-bottom: 1px solid #eee;">Shipping: ${computedShipping === 0 ? 'FREE' : `$${computedShipping.toFixed(2)} MXN`}</p>
+              <h2 style="margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">Total: $${computedTotal.toFixed(2)} MXN</h2>
             </div>
           </div>
           
@@ -245,6 +249,9 @@ export function Invoice() {
                 </div>
               </div>
               <div className="text-right">
+                {item.basePrice && item.basePrice > item.price && (
+                  <p className="text-[10px] line-through text-zinc-600 font-bold translate-no" translate="no">${(item.basePrice * item.quantity).toFixed(2)}</p>
+                )}
                 <p className="text-sm font-bold translate-no" translate="no">${(item.price * item.quantity).toFixed(2)} MXN</p>
               </div>
             </div>
@@ -253,15 +260,25 @@ export function Invoice() {
         
         <div className="mt-8 flex justify-end">
           <div className="w-full sm:w-1/2 md:w-1/3">
-            <div className="flex justify-between text-xs tracking-widest uppercase mb-2">
-               <span className="text-zinc-500">Subtotal</span>
+            <div className="flex justify-between text-[10px] tracking-widest uppercase mb-2 text-zinc-500">
+               <span>Original Subtotal</span>
+               <span className="translate-no" translate="no">${computedBaseSubtotal.toFixed(2)} MXN</span>
+            </div>
+            {computedSavings > 0 && (
+              <div className="flex justify-between text-[10px] tracking-widest uppercase mb-2 text-green-500 font-bold">
+                 <span>Discount / Descuento</span>
+                 <span className="translate-no" translate="no">-${computedSavings.toFixed(2)} MXN</span>
+              </div>
+            )}
+            <div className="flex justify-between text-xs tracking-widest uppercase mb-2 font-bold text-zinc-200 pt-2 border-t border-zinc-900">
+               <span>Subtotal</span>
                <span className="translate-no" translate="no">${computedSubtotal.toFixed(2)} MXN</span>
             </div>
-            <div className="flex justify-between text-xs tracking-widest uppercase mb-4 border-b border-zinc-800 pb-4">
-               <span className="text-zinc-500">Shipping</span>
+            <div className="flex justify-between text-[10px] tracking-widest uppercase mb-4 border-b border-zinc-800 pb-4 text-zinc-500">
+               <span>Shipping</span>
                <span>{computedShipping === 0 ? 'FREE' : `$${computedShipping.toFixed(2)} MXN`}</span>
             </div>
-            <div className="flex justify-between font-bold text-lg uppercase tracking-widest">
+            <div className="flex justify-between font-bold text-lg uppercase tracking-widest text-white">
                <span>Total</span>
                <span className="translate-no" translate="no">${computedTotal.toFixed(2)} MXN</span>
             </div>

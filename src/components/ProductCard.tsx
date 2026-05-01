@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Product } from '../lib/api';
+import { Product, getDiscountedPrice } from '../lib/api';
 import { Heart, HeartOff } from 'lucide-react';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { OfferBadge } from './OfferBadge';
@@ -8,6 +8,8 @@ import { OfferBadge } from './OfferBadge';
 export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const isFav = isFavorite(product.id!);
+  const finalPrice = getDiscountedPrice(product.price, product.offer);
+  const hasDiscount = finalPrice < product.price;
 
   return (
     <div className="group flex flex-col gap-3 relative">
@@ -33,7 +35,14 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
             <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1">{product.category}</p>
             <h4 className="text-sm font-medium">{product.name}</h4>
           </div>
-          <p className="text-sm font-bold text-zinc-300 translate-no" translate="no">${product.price} MXN</p>
+          <div className="text-right">
+            {hasDiscount && (
+              <p className="text-[10px] line-through text-zinc-600 font-bold translate-no" translate="no">${product.price}</p>
+            )}
+            <p className={`text-sm font-bold translate-no ${hasDiscount ? 'text-white' : 'text-zinc-300'}`} translate="no">
+              ${finalPrice.toFixed(2)} MXN
+            </p>
+          </div>
         </div>
         {(product.stock !== undefined) && (
            <div className={`mt-1 text-[10px] uppercase tracking-widest font-bold ${product.stock > 0 ? (product.stock < 5 ? 'text-red-500' : 'text-zinc-500') : 'text-red-600'}`}>

@@ -60,6 +60,8 @@ export function Cart() {
 
   const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = getCartTotal();
+  const baseSubtotal = items.reduce((sum, item) => sum + (item.basePrice || item.price) * item.quantity, 0);
+  const totalSavings = baseSubtotal - subtotal;
   const shippingCost = totalItemsCount >= 3 ? 0 : 35;
   const totalAmount = subtotal + shippingCost;
 
@@ -149,7 +151,12 @@ export function Cart() {
                   <div>
                     <div className="flex justify-between items-start">
                       <h3 className="font-medium text-sm md:text-base uppercase tracking-widest">{item.name}</h3>
-                      <p className="font-bold text-zinc-300 translate-no" translate="no">${item.price} MXN</p>
+                      <div className="text-right">
+                        {item.basePrice && item.basePrice > item.price && (
+                          <p className="text-[10px] line-through text-zinc-600 font-bold translate-no" translate="no">${item.basePrice}</p>
+                        )}
+                        <p className="font-bold text-zinc-300 translate-no" translate="no">${item.price} MXN</p>
+                      </div>
                     </div>
                     <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1 translate-no" translate="no">Size: {item.size}</p>
                   </div>
@@ -187,8 +194,18 @@ export function Cart() {
         <div className="w-full lg:w-1/3">
           <div className="bg-zinc-900 p-8 border border-zinc-800">
             <h2 className="text-sm font-bold uppercase tracking-[0.2em] mb-6 text-white">Order Summary</h2>
-            <div className="flex justify-between items-center mb-4 text-xs tracking-widest uppercase">
-              <span className="text-zinc-500">Subtotal</span>
+            <div className="flex justify-between items-center mb-2 text-xs tracking-widest uppercase">
+              <span className="text-zinc-500">Subtotal Original</span>
+              <span className="font-medium text-zinc-400 translate-no" translate="no">${baseSubtotal.toFixed(2)} MXN</span>
+            </div>
+            {totalSavings > 0 && (
+              <div className="flex justify-between items-center mb-2 text-xs tracking-widest uppercase text-green-500 font-bold">
+                <span>Descuento / Discount</span>
+                <span className="translate-no" translate="no">-${totalSavings.toFixed(2)} MXN</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center mb-2 pt-2 border-t border-zinc-800 text-xs tracking-widest uppercase">
+              <span className="text-zinc-500">Subtotal con Descuento</span>
               <span className="font-bold text-white translate-no" translate="no">${subtotal.toFixed(2)} MXN</span>
             </div>
             <div className="flex justify-between items-center mb-6 text-xs tracking-widest uppercase">

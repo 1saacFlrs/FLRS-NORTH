@@ -45,6 +45,8 @@ export function AdminDashboard() {
   const [offerType, setOfferType] = useState<'color' | 'image'>('color');
   const [offerValue, setOfferValue] = useState('#ff0000');
   const [offerEndDate, setOfferEndDate] = useState('');
+  const [offerDiscountType, setOfferDiscountType] = useState<'amount' | 'percentage'>('amount');
+  const [offerDiscountValue, setOfferDiscountValue] = useState('');
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
@@ -256,6 +258,8 @@ export function AdminDashboard() {
     setOfferType('color');
     setOfferValue('#ffffff');
     setOfferEndDate('');
+    setOfferDiscountType('amount');
+    setOfferDiscountValue('');
     setIsModalOpen(true);
   };
 
@@ -295,11 +299,15 @@ export function AdminDashboard() {
       setOfferType(p.offer.type === 'none' ? 'color' : p.offer.type);
       setOfferValue(p.offer.value || '#ffffff');
       setOfferEndDate(p.offer.endDate || '');
+      setOfferDiscountType(p.offer.discountType || 'amount');
+      setOfferDiscountValue(p.offer.discountValue?.toString() || '');
     } else {
       setOfferActive(false);
       setOfferType('color');
       setOfferValue('#ffffff');
       setOfferEndDate('');
+      setOfferDiscountType('amount');
+      setOfferDiscountValue('');
     }
 
     setIsModalOpen(true);
@@ -394,7 +402,9 @@ export function AdminDashboard() {
         active: offerActive,
         type: (offerActive ? offerType : 'none') as 'color' | 'image' | 'none',
         value: offerActive ? offerValue : '',
-        endDate: offerActive ? offerEndDate : ''
+        endDate: offerActive ? offerEndDate : '',
+        discountType: offerActive ? offerDiscountType : 'amount',
+        discountValue: offerActive && offerDiscountValue ? parseFloat(offerDiscountValue) : 0
       }
     };
     
@@ -1086,34 +1096,68 @@ export function AdminDashboard() {
                 </div>
                 
                 {offerActive && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-800">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Badge Type</label>
-                      <select 
-                        value={offerType} 
-                        onChange={e => setOfferType(e.target.value as 'color' | 'image')}
-                        className="flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-700 text-white"
-                      >
-                        <option value="color">Color Overlay</option>
-                        <option value="image">PNG Image Overlay</option>
-                      </select>
+                  <div className="space-y-4 pt-4 border-t border-zinc-800">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Badge Type</label>
+                        <select 
+                          value={offerType} 
+                          onChange={e => setOfferType(e.target.value as 'color' | 'image')}
+                          className="flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-700 text-white"
+                        >
+                          <option value="color">Color Overlay</option>
+                          <option value="image">PNG Image Overlay</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">
+                          {offerType === 'color' ? 'Color (Hex)' : 'Image URL (Recommend 200x200)'}
+                        </label>
+                        {offerType === 'color' ? (
+                          <div className="flex gap-2">
+                             <input type="color" value={offerValue} onChange={e => setOfferValue(e.target.value)} className="w-10 h-10 rounded border border-zinc-800 cursor-pointer bg-zinc-900" />
+                             <Input value={offerValue} onChange={e => setOfferValue(e.target.value)} placeholder="#ff0000" className="bg-zinc-900 border-zinc-800" />
+                          </div>
+                        ) : (
+                          <Input value={offerValue} onChange={e => setOfferValue(e.target.value)} placeholder="https://..." className="bg-zinc-900 border-zinc-800 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">End Date</label>
+                        <Input type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={offerEndDate} onChange={e => setOfferEndDate(e.target.value)} required={offerActive} className="bg-zinc-900 border-zinc-800 text-white [&::-webkit-calendar-picker-indicator]:bg-white [&::-webkit-calendar-picker-indicator]:rounded-sm" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">
-                        {offerType === 'color' ? 'Color (Hex)' : 'Image URL (Recommend 200x200)'}
-                      </label>
-                      {offerType === 'color' ? (
-                        <div className="flex gap-2">
-                           <input type="color" value={offerValue} onChange={e => setOfferValue(e.target.value)} className="w-10 h-10 rounded border border-zinc-800 cursor-pointer bg-zinc-900" />
-                           <Input value={offerValue} onChange={e => setOfferValue(e.target.value)} placeholder="#ff0000" className="bg-zinc-900 border-zinc-800" />
-                        </div>
-                      ) : (
-                        <Input value={offerValue} onChange={e => setOfferValue(e.target.value)} placeholder="https://..." className="bg-zinc-900 border-zinc-800 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">End Date</label>
-                      <Input type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={offerEndDate} onChange={e => setOfferEndDate(e.target.value)} required={offerActive} className="bg-zinc-900 border-zinc-800 text-white [&::-webkit-calendar-picker-indicator]:bg-white [&::-webkit-calendar-picker-indicator]:rounded-sm" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">Discount Type</label>
+                        <select 
+                          value={offerDiscountType} 
+                          onChange={e => setOfferDiscountType(e.target.value as 'amount' | 'percentage')}
+                          className="flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-700 text-white"
+                        >
+                          <option value="amount">Fixed Amount (MXN)</option>
+                          <option value="percentage">Percentage (%)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-zinc-500">
+                          {offerDiscountType === 'amount' ? 'Amount to Subtract ($)' : 'Percentage to Subtract (%)'}
+                        </label>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          value={offerDiscountValue} 
+                          onChange={e => setOfferDiscountValue(e.target.value)} 
+                          placeholder={offerDiscountType === 'amount' ? "20.00" : "15"}
+                          className="bg-zinc-900 border-zinc-800 text-white" 
+                        />
+                        <p className="text-[9px] text-zinc-500 mt-1 uppercase tracking-widest">
+                          {offerDiscountType === 'amount' 
+                            ? "This amount will be subtracted from the base price." 
+                            : "This percentage will be subtracted from the base price."}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}

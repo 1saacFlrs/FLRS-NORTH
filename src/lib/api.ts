@@ -7,6 +7,8 @@ export interface ProductOffer {
   type: 'color' | 'image' | 'none';
   value: string;
   endDate: string;
+  discountType?: 'amount' | 'percentage';
+  discountValue?: number;
 }
 
 export interface Product {
@@ -62,6 +64,26 @@ export interface UserProfile {
   orders: Order[];
   createdAt?: any;
 }
+
+export const getDiscountedPrice = (price: number, offer?: ProductOffer): number => {
+  if (!offer || !offer.active) return price;
+  
+  // Check if offer has expired
+  if (offer.endDate) {
+    const end = new Date(offer.endDate);
+    if (!isNaN(end.getTime()) && end < new Date()) {
+      return price;
+    }
+  }
+
+  if (offer.discountType === 'amount' && offer.discountValue) {
+    return Math.max(0, price - offer.discountValue);
+  } else if (offer.discountType === 'percentage' && offer.discountValue) {
+    return Math.max(0, price * (1 - offer.discountValue / 100));
+  }
+  
+  return price;
+};
 
 export const getProducts = async (): Promise<Product[]> => {
   const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));

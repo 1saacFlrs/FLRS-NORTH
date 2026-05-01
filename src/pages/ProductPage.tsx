@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProductById, Product } from '../lib/api';
+import { getProductById, Product, getDiscountedPrice } from '../lib/api';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useCartStore } from '../store/useCartStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
-import { ChevronLeft, ChevronRight, Heart, HeartOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, HeartOff, Volume2, VolumeX } from 'lucide-react';
 import { OfferBadge } from '../components/OfferBadge';
 
 export function ProductPage() {
@@ -20,6 +20,11 @@ export function ProductPage() {
   const [productText, setProductText] = useState({ shippingReturns: '', materialsCare: '' });
   const addItem = useCartStore(state => state.addItem);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
+
+  const finalPrice = product ? getDiscountedPrice(product.price, product.offer) : 0;
+  const hasDiscount = product ? finalPrice < product.price : false;
+
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -72,7 +77,8 @@ export function ProductPage() {
     addItem({
       id: product.id!,
       name: product.name,
-      price: product.price,
+      price: finalPrice,
+      basePrice: product.price,
       imageUrl: product.imageUrl,
       size: selectedSize
     });
@@ -145,7 +151,25 @@ export function ProductPage() {
                 return (
                   <div key={idx} className="w-full h-full shrink-0 snap-start relative">
                     {isVideo ? (
-                      <video src={media} autoPlay loop muted playsInline className="w-full h-full object-cover object-center transition-all duration-700" />
+                      <div className="relative w-full h-full">
+                        <video 
+                          src={media} 
+                          autoPlay 
+                          loop 
+                          muted={isMuted} 
+                          playsInline 
+                          className="w-full h-full object-cover object-center transition-all duration-700" 
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMuted(!isMuted);
+                          }}
+                          className="absolute bottom-4 right-4 z-10 p-2 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors border border-white/10"
+                        >
+                          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                        </button>
+                      </div>
                     ) : (
                       <img src={media} alt={`${product.name} display ${idx + 1}`} className="w-full h-full object-cover object-center transition-all duration-700" />
                     )}
@@ -209,7 +233,12 @@ export function ProductPage() {
           <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">{product.category}</p>
           <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-[0.2em] mb-4 text-white" translate="no">{product.name}</h1>
           <div className="flex items-center gap-4 mb-8">
-            <p className="text-2xl font-medium text-zinc-300" translate="no">${product.price} MXN</p>
+            <div className="flex flex-col">
+              {hasDiscount && (
+                <p className="text-xs line-through text-zinc-500 font-bold translate-no" translate="no">${product.price}</p>
+              )}
+              <p className="text-2xl font-medium text-white" translate="no">${finalPrice.toFixed(2)} MXN</p>
+            </div>
             {currentSizeStock !== undefined && (
                <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 border rounded ${isCurrentSelectionOutOfStock ? 'border-red-900 text-red-500 bg-red-950/30' : (currentSizeStock < 5 ? 'border-amber-900 text-amber-500 bg-amber-950/30' : 'border-zinc-800 text-zinc-400')}`}>
                  {isCurrentSelectionOutOfStock ? 'Sold Out' : `${currentSizeStock} in stock`}
