@@ -29,7 +29,8 @@ export function Home() {
       <div className="h-[70vh] bg-zinc-900 mx-8 mt-20 mb-8 rounded-2xl relative overflow-hidden group">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&q=80&w=1000')] bg-cover bg-center opacity-60 grayscale group-hover:scale-105 transition-transform duration-700"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-        <div className="absolute bottom-12 left-12">
+
+        <div className="absolute bottom-12 left-12 z-20">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

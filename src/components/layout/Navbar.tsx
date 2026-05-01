@@ -1,21 +1,53 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Heart, User as UserIcon, LogOut, Search } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingCart, Menu, X, Heart, User as UserIcon, LogOut, Search, Instagram } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useCartStore } from '../../store/useCartStore';
 import { useFavoritesStore } from '../../store/useFavoritesStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { auth } from '../../lib/firebase';
+import { auth, db } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { SearchOverlay } from '../SearchOverlay';
+
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [socialLinks, setSocialLinks] = useState({ instagram: '', tiktok: '' });
   const cartItems = useCartStore((state) => state.items);
   const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const favoriteItems = useFavoritesStore((state) => state.items);
   const { user } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchSocial = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'social');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setSocialLinks(docSnap.data() as any);
+        }
+      } catch (err) {
+        console.error("Error fetching social links:", err);
+      }
+    };
+    fetchSocial();
+  }, []);
 
   const handleLogout = async () => {
     if (window.confirm("¿Seguro que deseas cerrar sesión? / Are you sure you want to log out?")) {
@@ -141,6 +173,33 @@ export function Navbar() {
             >
               Admin
             </Link>
+
+            {/* Social Links for Mobile */}
+            {(socialLinks.instagram || socialLinks.tiktok) && (
+              <div className="pt-4 mt-4 border-t border-zinc-900">
+                <p className="px-3 pb-2 text-[10px] text-zinc-600">Redes Sociales</p>
+                {socialLinks.instagram && (
+                  <a 
+                    href={socialLinks.instagram} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="flex items-center gap-3 px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md"
+                  >
+                    <Instagram className="w-4 h-4" /> Instagram
+                  </a>
+                )}
+                {socialLinks.tiktok && (
+                  <a 
+                    href={socialLinks.tiktok} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="flex items-center gap-3 px-3 py-3 font-medium hover:bg-zinc-900 hover:text-white rounded-md"
+                  >
+                    <TikTokIcon className="w-4 h-4" /> TikTok
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -34,3 +34,17 @@ body {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+@keyframes spin-3d {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+.animate-spin-3d {
+  animation: spin-3d 5s linear infinite;
+  transform-style: preserve-3d;
+}
