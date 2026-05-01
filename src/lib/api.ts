@@ -187,13 +187,16 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 
 export const createUserProfile = async (userId: string, email: string) => {
   const docRef = doc(db, 'users', userId);
-  await setDoc(docRef, {
-    email,
-    cart: [],
-    favorites: [],
-    orders: [],
-    createdAt: serverTimestamp(),
-  });
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) {
+    await setDoc(docRef, {
+      email,
+      cart: [],
+      favorites: [],
+      orders: [],
+      createdAt: serverTimestamp(),
+    });
+  }
 };
 
 export const updateUserProfileData = async (userId: string, updates: { cart?: any[], favorites?: string[], orders?: Order[] }) => {
