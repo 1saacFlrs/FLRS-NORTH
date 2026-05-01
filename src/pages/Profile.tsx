@@ -22,6 +22,7 @@ export function Profile() {
     fullName: '',
     address: '',
     exteriorNumber: '',
+    neighborhood: '',
     reference: '',
     city: 'Acuña',
     state: 'Coahuila',
@@ -207,6 +208,10 @@ export function Profile() {
                       <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Código Postal</label>
                       <Input required value={shippingInfo.zipCode} onChange={e => setShippingInfo({...shippingInfo, zipCode: e.target.value})} className="bg-black border-zinc-800 text-white" />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Colonia / Fraccionamiento</label>
+                    <Input required value={shippingInfo.neighborhood} onChange={e => setShippingInfo({...shippingInfo, neighborhood: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de Domicilio (Opcional)</label>

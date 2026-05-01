@@ -74,7 +74,7 @@ export function Footer() {
             </p>
           </div>
           <div>
-            <h4 className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4">Links</h4>
+            <h4 className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-4"><span translate="no" className="translate-no">Links</span></h4>
             <ul className="space-y-3 text-xs tracking-widest uppercase text-zinc-400">
               <li><Link to="/shop" className="hover:text-white transition-colors">Shop All</Link></li>
               {socialLinks.instagram && (

@@ -105,9 +105,10 @@ export function Invoice() {
             <div style="width: 48%; background: #f9f9f9; padding: 15px; border: 1px solid #eee;">
               <h3 style="margin-top: 0; font-size: 12px; text-transform: uppercase; color: #555;">Shipping Address</h3>
               ${order.customerData && order.customerData.address ? `
-                <p style="margin: 0; font-size: 13px;">${order.customerData.address} ${order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
-                <p style="margin: 5px 0 0 0; font-size: 12px; color: #555;">${order.customerData.city}, ${order.customerData.state} ${order.customerData.zipCode}</p>
-                <p style="margin: 5px 0 0 0; font-size: 12px; color: #555;">${order.customerData.country}</p>
+                <p style="margin: 0; font-size: 12px;">${order.customerData.address} ${order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
+                ${order.customerData.neighborhood ? `<p style="margin: 3px 0 0 0; font-size: 11px; color: #555;">Colonia: ${order.customerData.neighborhood}</p>` : ''}
+                ${order.customerData.reference ? `<p style="margin: 3px 0 0 0; font-size: 11px; color: #777; font-style: italic;">Ref: ${order.customerData.reference}</p>` : ''}
+                <p style="margin: 3px 0 0 0; font-size: 11px; color: #555;">${order.customerData.city}, ${order.customerData.state} ${order.customerData.zipCode}, ${order.customerData.country}</p>
               ` : '<p style="font-size: 12px; color: #888;">No shipping details</p>'}
             </div>
           </div>
@@ -194,12 +195,12 @@ export function Invoice() {
           <div className="bg-zinc-950 border border-zinc-900 p-6">
             <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Shipping Address</h2>
             {order.customerData.address ? (
-              <>
-                <p className="text-xs tracking-widest text-zinc-300 mb-1">{order.customerData.address} {order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
-                {order.customerData.reference && <p className="text-xs tracking-widest text-zinc-400 italic mb-1">Ref: {order.customerData.reference}</p>}
-                <p className="text-xs tracking-widest text-zinc-400">{order.customerData.city}, {order.customerData.state} {order.customerData.zipCode}</p>
-                <p className="text-xs tracking-widest text-zinc-400 mt-1">{order.customerData.country}</p>
-              </>
+              <div className="space-y-0.5">
+                <p className="text-xs tracking-widest text-zinc-300 leading-relaxed">{order.customerData.address} {order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
+                {order.customerData.neighborhood && <p className="text-xs tracking-widest text-zinc-400 leading-relaxed">Colonia: {order.customerData.neighborhood}</p>}
+                {order.customerData.reference && <p className="text-[10px] tracking-widest text-zinc-500 italic leading-relaxed">Ref: {order.customerData.reference}</p>}
+                <p className="text-xs tracking-widest text-zinc-400 leading-relaxed">{order.customerData.city}, {order.customerData.state} {order.customerData.zipCode}, {order.customerData.country}</p>
+              </div>
             ) : (
               <p className="text-xs tracking-widest text-zinc-600 italic">No shipping details provided</p>
             )}

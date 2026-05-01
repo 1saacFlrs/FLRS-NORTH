@@ -22,6 +22,7 @@ export function Cart() {
     fullName: '',
     address: '',
     exteriorNumber: '',
+    neighborhood: '',
     reference: '',
     city: 'Acuña',
     state: 'Coahuila',
@@ -75,7 +76,7 @@ export function Cart() {
     e.preventDefault();
     if (!user) return;
 
-    if (!customerData.phone || !customerData.fullName || !customerData.address || !customerData.exteriorNumber || !customerData.zipCode) {
+    if (!customerData.phone || !customerData.fullName || !customerData.address || !customerData.exteriorNumber || !customerData.neighborhood || !customerData.zipCode) {
       alert("Please fill in all mandatory fields.");
       return;
     }
@@ -232,6 +233,10 @@ export function Cart() {
                     <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Código Postal</label>
                     <Input required value={customerData.zipCode} onChange={e => setCustomerData({...customerData, zipCode: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Colonia / Fraccionamiento</label>
+                  <Input required value={customerData.neighborhood} onChange={e => setCustomerData({...customerData, neighborhood: e.target.value})} className="bg-black border-zinc-800 text-white" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de Domicilio (Opcional)</label>

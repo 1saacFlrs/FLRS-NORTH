@@ -46,6 +46,7 @@ export interface Order {
     fullName: string;
     address: string;
     exteriorNumber?: string;
+    neighborhood?: string;
     reference?: string;
     city: string;
     state: string;

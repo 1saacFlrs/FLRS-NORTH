@@ -630,7 +630,7 @@ export function AdminDashboard() {
             activeAdminTab === 'social' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'
           }`}
         >
-          Social Links
+          Social <span translate="no" className="translate-no">Links</span>
         </button>
         <button
           onClick={() => setActiveAdminTab('productText')}
@@ -645,9 +645,9 @@ export function AdminDashboard() {
       {activeAdminTab === 'social' && (
         <div className="max-w-2xl">
           <div className="mb-6">
-            <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2">Social Links</h2>
+            <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2">Social <span translate="no" className="translate-no">Links</span></h2>
             <p className="text-xs text-zinc-500 uppercase tracking-widest leading-relaxed">
-              Manage the links for the social media icons in the footer.
+              Manage the <span translate="no" className="translate-no">links</span> for the social media icons in the footer.
             </p>
           </div>
 

@@ -40,7 +40,7 @@ export function ForgotPassword() {
           </div>
           
           <Button type="submit" disabled={isLoading} className="w-full rounded-none tracking-widest uppercase bg-white text-black hover:bg-zinc-200">
-            {isLoading ? 'Sending...' : 'Send Reset Link'}
+            {isLoading ? 'Sending...' : <>Send Reset <span translate="no" className="translate-no">Link</span></>}
           </Button>
         </form>
         <div className="mt-8 pt-6 border-t border-zinc-800 text-[10px] text-zinc-400 text-center uppercase tracking-widest">
