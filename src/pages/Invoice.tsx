@@ -111,8 +111,8 @@ export function Invoice() {
             <h3 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">Order Items</h3>
             ${itemsHtml}
             <div style="text-align: right; margin-top: 20px;">
-              <p style="margin: 0; font-size: 12px; text-transform: uppercase; color: #555;">Subtotal: $${order.total.toFixed(2)} MXN</p>
-              <p style="margin: 5px 0 10px 0; font-size: 12px; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px;">Shipping: TBD</p>
+              <p style="margin: 0; font-size: 12px; text-transform: uppercase; color: #555;">Subtotal: $${(order.subtotal || order.total).toFixed(2)} MXN</p>
+              <p style="margin: 5px 0 10px 0; font-size: 12px; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px;">Shipping: ${order.shippingCost === 0 ? 'FREE' : (order.shippingCost ? `$${order.shippingCost.toFixed(2)} MXN` : 'FREE')}</p>
               <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">Total: $${order.total.toFixed(2)} MXN</h2>
             </div>
           </div>
@@ -225,11 +225,11 @@ export function Invoice() {
           <div className="w-full sm:w-1/2 md:w-1/3">
             <div className="flex justify-between text-xs tracking-widest uppercase mb-2">
               <span className="text-zinc-500">Subtotal</span>
-              <span className="translate-no" translate="no">${order.total.toFixed(2)} MXN</span>
+              <span className="translate-no" translate="no">${(order.subtotal || order.total).toFixed(2)} MXN</span>
             </div>
             <div className="flex justify-between text-xs tracking-widest uppercase mb-4 border-b border-zinc-800 pb-4">
               <span className="text-zinc-500">Shipping</span>
-              <span>TBD</span>
+              <span>{order.shippingCost === 0 ? 'FREE' : (order.shippingCost ? `$${order.shippingCost.toFixed(2)} MXN` : 'FREE')}</span>
             </div>
             <div className="flex justify-between font-bold text-lg uppercase tracking-widest">
               <span>Total</span>

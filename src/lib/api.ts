@@ -35,6 +35,8 @@ export interface Category {
 export interface Order {
   id: string;
   items: any[];
+  subtotal?: number;
+  shippingCost?: number;
   total: number;
   status: 'processing' | 'shipped' | 'delivered';
   createdAt: string;

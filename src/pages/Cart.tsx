@@ -57,6 +57,11 @@ export function Cart() {
     }
   }, [user, showCheckoutForm]);
 
+  const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = getCartTotal();
+  const shippingCost = totalItemsCount >= 3 ? 0 : 35;
+  const totalAmount = subtotal + shippingCost;
+
   const handleInitialCheckout = () => {
     if (!user) {
       alert("Please log in to checkout");
@@ -92,7 +97,9 @@ export function Cart() {
       const order = {
         id: Math.random().toString(36).substr(2, 9),
         items: [...items],
-        total: getCartTotal(),
+        subtotal,
+        shippingCost,
+        total: totalAmount,
         status: 'processing' as const,
         createdAt: new Date().toISOString(),
         customerData: orderCustomerData
@@ -181,15 +188,15 @@ export function Cart() {
             <h2 className="text-sm font-bold uppercase tracking-[0.2em] mb-6 text-white">Order Summary</h2>
             <div className="flex justify-between items-center mb-4 text-xs tracking-widest uppercase">
               <span className="text-zinc-500">Subtotal</span>
-              <span className="font-bold text-white translate-no" translate="no">${getCartTotal().toFixed(2)} MXN</span>
+              <span className="font-bold text-white translate-no" translate="no">${subtotal.toFixed(2)} MXN</span>
             </div>
             <div className="flex justify-between items-center mb-6 text-xs tracking-widest uppercase">
               <span className="text-zinc-500">Shipping</span>
-              <span className="text-zinc-400 font-medium">Calculated at checkout</span>
+              <span className="text-zinc-400 font-medium">{shippingCost === 0 ? 'FREE / GRATIS' : `$${shippingCost.toFixed(2)} MXN`}</span>
             </div>
             <div className="border-t border-zinc-800 pt-4 mb-8 flex justify-between items-center">
               <span className="font-bold uppercase tracking-[0.2em] text-sm text-white">Total</span>
-              <span className="font-bold text-xl text-white translate-no" translate="no">${getCartTotal().toFixed(2)} MXN</span>
+              <span className="font-bold text-xl text-white translate-no" translate="no">${totalAmount.toFixed(2)} MXN</span>
             </div>
             
             {!showCheckoutForm ? (
