@@ -21,8 +21,8 @@ export function Cart() {
     phone: '',
     fullName: '',
     address: '',
-    exteriorNumber: '',
     neighborhood: '',
+    exteriorNumber: '',
     reference: '',
     city: 'Acuña',
     state: 'Coahuila',
@@ -76,7 +76,7 @@ export function Cart() {
     e.preventDefault();
     if (!user) return;
 
-    if (!customerData.phone || !customerData.fullName || !customerData.address || !customerData.exteriorNumber || !customerData.neighborhood || !customerData.zipCode) {
+    if (!customerData.phone || !customerData.fullName || !customerData.address || !customerData.neighborhood || !customerData.exteriorNumber || !customerData.zipCode) {
       alert("Please fill in all mandatory fields.");
       return;
     }
@@ -224,6 +224,10 @@ export function Cart() {
                   <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Dirección de Calle</label>
                   <Input required value={customerData.address} onChange={e => setCustomerData({...customerData, address: e.target.value})} className="bg-black border-zinc-800 text-white" />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Colonia / Fraccionamiento</label>
+                  <Input required value={customerData.neighborhood} onChange={e => setCustomerData({...customerData, neighborhood: e.target.value})} className="bg-black border-zinc-800 text-white" placeholder="Ej. Centro, Los Pinos..." />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Número Exterior</label>
@@ -233,10 +237,6 @@ export function Cart() {
                     <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Código Postal</label>
                     <Input required value={customerData.zipCode} onChange={e => setCustomerData({...customerData, zipCode: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Colonia / Fraccionamiento</label>
-                  <Input required value={customerData.neighborhood} onChange={e => setCustomerData({...customerData, neighborhood: e.target.value})} className="bg-black border-zinc-800 text-white" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de Domicilio (Opcional)</label>

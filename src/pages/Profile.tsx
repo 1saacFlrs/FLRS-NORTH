@@ -21,8 +21,8 @@ export function Profile() {
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     address: '',
-    exteriorNumber: '',
     neighborhood: '',
+    exteriorNumber: '',
     reference: '',
     city: 'Acuña',
     state: 'Coahuila',
@@ -199,6 +199,10 @@ export function Profile() {
                     <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Dirección de Calle</label>
                     <Input required value={shippingInfo.address} onChange={e => setShippingInfo({...shippingInfo, address: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Colonia / Fraccionamiento</label>
+                    <Input required value={shippingInfo.neighborhood} onChange={e => setShippingInfo({...shippingInfo, neighborhood: e.target.value})} className="bg-black border-zinc-800 text-white" placeholder="Ej. Centro, Los Pinos..." />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Número Exterior</label>
@@ -208,10 +212,6 @@ export function Profile() {
                       <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Código Postal</label>
                       <Input required value={shippingInfo.zipCode} onChange={e => setShippingInfo({...shippingInfo, zipCode: e.target.value})} className="bg-black border-zinc-800 text-white" />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Colonia / Fraccionamiento</label>
-                    <Input required value={shippingInfo.neighborhood} onChange={e => setShippingInfo({...shippingInfo, neighborhood: e.target.value})} className="bg-black border-zinc-800 text-white" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de Domicilio (Opcional)</label>

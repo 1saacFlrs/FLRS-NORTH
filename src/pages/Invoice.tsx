@@ -87,29 +87,30 @@ export function Invoice() {
 
       const invoiceHTML = `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #000; background: #fff; max-width: 800px; margin: 0 auto;">
-          <div style="border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px;">
-            <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">Purchase Invoice</h1>
-            <p style="margin: 10px 0 0 0; color: #555; text-transform: uppercase;">Order #<strong>${order.id.toUpperCase()}</strong></p>
-            <p style="margin: 5px 0 0 0; color: #777; font-size: 12px;">Date: ${new Date(order.createdAt).toLocaleString()}</p>
+          <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: baseline;">
+            <div>
+              <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">Purchase Invoice</h1>
+              <p style="margin: 5px 0 0 0; color: #555; text-transform: uppercase; font-size: 14px;">Order #<strong>${order.id.toUpperCase()}</strong></p>
+            </div>
+            <p style="margin: 0; color: #777; font-size: 11px;">Date: ${new Date(order.createdAt).toLocaleString()}</p>
           </div>
           
-          <div style="margin-bottom: 40px; display: flex; justify-content: space-between;">
-            <div style="width: 48%; background: #f9f9f9; padding: 15px; border: 1px solid #eee;">
-              <h3 style="margin-top: 0; font-size: 12px; text-transform: uppercase; color: #555;">Customer Details</h3>
-              ${order.customerData ? `
-                <p style="margin: 0; font-weight: bold;">${order.customerData.fullName}</p>
-                <p style="margin: 5px 0 0 0; font-size: 12px;">${order.customerData.email}</p>
-                <p style="margin: 5px 0 0 0; font-size: 12px;">${order.customerData.phone}</p>
-              ` : '<p>N/A</p>'}
-            </div>
-            <div style="width: 48%; background: #f9f9f9; padding: 15px; border: 1px solid #eee;">
-              <h3 style="margin-top: 0; font-size: 12px; text-transform: uppercase; color: #555;">Shipping Address</h3>
+          <div style="margin-bottom: 25px; display: flex; justify-content: space-between; gap: 15px;">
+            <div style="width: 48%; background: #f9f9f9; padding: 12px; border: 1px solid #eee;">
+              <h3 style="margin-top: 0; font-size: 10px; text-transform: uppercase; color: #777; margin-bottom: 8px;">Shipping Address</h3>
               ${order.customerData && order.customerData.address ? `
-                <p style="margin: 0; font-size: 12px;">${order.customerData.address} ${order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
-                ${order.customerData.neighborhood ? `<p style="margin: 3px 0 0 0; font-size: 11px; color: #555;">Colonia: ${order.customerData.neighborhood}</p>` : ''}
-                ${order.customerData.reference ? `<p style="margin: 3px 0 0 0; font-size: 11px; color: #777; font-style: italic;">Ref: ${order.customerData.reference}</p>` : ''}
-                <p style="margin: 3px 0 0 0; font-size: 11px; color: #555;">${order.customerData.city}, ${order.customerData.state} ${order.customerData.zipCode}, ${order.customerData.country}</p>
-              ` : '<p style="font-size: 12px; color: #888;">No shipping details</p>'}
+                <p style="margin: 0; font-weight: bold; font-size: 13px; text-transform: uppercase;">${order.customerData.fullName}</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #333;">${order.customerData.address} ${order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: bold; color: #000;">Col. ${order.customerData.neighborhood || 'N/A'}</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #555;">${order.customerData.city}, ${order.customerData.state} CP ${order.customerData.zipCode}</p>
+              ` : '<p style="font-size: 11px; color: #888;">No address info</p>'}
+            </div>
+            <div style="width: 48%; background: #f9f9f9; padding: 12px; border: 1px solid #eee;">
+              <h3 style="margin-top: 0; font-size: 10px; text-transform: uppercase; color: #777; margin-bottom: 8px;">Contact Info</h3>
+              ${order.customerData ? `
+                <p style="margin: 0; font-size: 12px;"><strong>Email:</strong> ${order.customerData.email}</p>
+                <p style="margin: 4px 0 0 0; font-size: 12px;"><strong>Phone:</strong> ${order.customerData.phone}</p>
+              ` : '<p style="font-size: 11px;">N/A</p>'}
             </div>
           </div>
 
@@ -186,24 +187,47 @@ export function Invoice() {
 
       {order.customerData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-zinc-950 border border-zinc-900 p-6">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Customer Details</h2>
-            {order.customerData.fullName && <p className="text-sm font-medium tracking-widest uppercase mb-1">{order.customerData.fullName}</p>}
-            {order.customerData.email && <p className="text-xs tracking-widest text-zinc-400 mb-1">{order.customerData.email}</p>}
-            {order.customerData.phone && <p className="text-xs tracking-widest text-zinc-400">{order.customerData.phone}</p>}
+          <div className="bg-zinc-950 border border-zinc-900 p-6 flex flex-col justify-between">
+            <div>
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Shipping Details</h2>
+              {order.customerData.address ? (
+                <div className="space-y-1">
+                  <p className="text-sm font-bold tracking-widest text-zinc-100 uppercase">
+                    {order.customerData.fullName}
+                  </p>
+                  <p className="text-xs tracking-widest text-zinc-300">
+                    {order.customerData.address} {order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}
+                  </p>
+                  <p className="text-xs tracking-widest text-zinc-100 font-bold">
+                    Col. {order.customerData.neighborhood || 'N/A'}
+                  </p>
+                  <p className="text-xs tracking-widest text-zinc-400">
+                    {order.customerData.city}, {order.customerData.state} CP {order.customerData.zipCode}
+                  </p>
+                  <p className="text-xs tracking-widest text-zinc-500 uppercase">{order.customerData.country}</p>
+                  {order.customerData.reference && (
+                    <p className="text-[10px] tracking-widest text-zinc-500 italic mt-2 border-l border-zinc-800 pl-2">
+                       Ref: {order.customerData.reference}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs tracking-widest text-zinc-600 italic">No address provided</p>
+              )}
+            </div>
           </div>
-          <div className="bg-zinc-950 border border-zinc-900 p-6">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Shipping Address</h2>
-            {order.customerData.address ? (
-              <div className="space-y-0.5">
-                <p className="text-xs tracking-widest text-zinc-300 leading-relaxed">{order.customerData.address} {order.customerData.exteriorNumber ? `#${order.customerData.exteriorNumber}` : ''}</p>
-                {order.customerData.neighborhood && <p className="text-xs tracking-widest text-zinc-400 leading-relaxed">Colonia: {order.customerData.neighborhood}</p>}
-                {order.customerData.reference && <p className="text-[10px] tracking-widest text-zinc-500 italic leading-relaxed">Ref: {order.customerData.reference}</p>}
-                <p className="text-xs tracking-widest text-zinc-400 leading-relaxed">{order.customerData.city}, {order.customerData.state} {order.customerData.zipCode}, {order.customerData.country}</p>
+          <div className="bg-zinc-950 border border-zinc-900 p-6 flex flex-col">
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 text-zinc-500">Contact Info</h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-[9px] text-zinc-600 uppercase tracking-widest mb-0.5">Email</p>
+                <p className="text-xs tracking-widest text-zinc-300 truncate">{order.customerData.email}</p>
               </div>
-            ) : (
-              <p className="text-xs tracking-widest text-zinc-600 italic">No shipping details provided</p>
-            )}
+              <div>
+                <p className="text-[9px] text-zinc-600 uppercase tracking-widest mb-0.5">WhatsApp / Phone</p>
+                <p className="text-xs tracking-widest text-zinc-300 font-mono italic">{order.customerData.phone}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
