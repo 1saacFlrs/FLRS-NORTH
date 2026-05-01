@@ -142,7 +142,7 @@ export function Cart() {
             {items.map((item) => (
               <li key={`${item.id}-${item.size}`} className="py-6 flex gap-6">
                 <div className="w-24 h-32 flex-shrink-0 bg-zinc-900 overflow-hidden border border-zinc-800">
-                  <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                  <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover transition-all duration-500" />
                 </div>
                 <div className="flex-grow flex flex-col justify-between">
                   <div>

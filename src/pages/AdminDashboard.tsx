@@ -50,7 +50,7 @@ export function AdminDashboard() {
   const [authChecking, setAuthChecking] = useState(true);
 
   // Tabs
-  const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'provider' | 'social'>('products');
+  const [activeAdminTab, setActiveAdminTab] = useState<'products' | 'provider' | 'social' | 'productText'>('products');
 
   // Provider Info state
   const [providerInfo, setProviderInfo] = useState({ name: '', email: '', phone: '', city: '' });
@@ -61,6 +61,11 @@ export function AdminDashboard() {
   const [socialLinks, setSocialLinks] = useState({ instagram: '', tiktok: '' });
   const [isSavingSocial, setIsSavingSocial] = useState(false);
   const [socialSaveMessage, setSocialSaveMessage] = useState('');
+
+  // Product Text state
+  const [productText, setProductText] = useState({ shippingReturns: '', materialsCare: '' });
+  const [isSavingProductText, setIsSavingProductText] = useState(false);
+  const [productTextSaveMessage, setProductTextSaveMessage] = useState('');
 
   // Revoke state
   const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
@@ -121,8 +126,17 @@ export function AdminDashboard() {
           tiktok: data.tiktok || ''
         });
       }
+
+      const productTextSnap = await getDoc(doc(db, 'settings', 'productText'));
+      if (productTextSnap.exists()) {
+        const data = productTextSnap.data();
+        setProductText({
+          shippingReturns: data.shippingReturns || '',
+          materialsCare: data.materialsCare || ''
+        });
+      }
     } catch (err) {
-      console.error('Error fetching provider/social info', err);
+      console.error('Error fetching settings info', err);
     }
   };
 
@@ -144,6 +158,27 @@ export function AdminDashboard() {
       setSocialSaveMessage('Error saving social links: ' + err.message);
     } finally {
       setIsSavingSocial(false);
+    }
+  };
+
+  const handleSaveProductText = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingProductText(true);
+    setProductTextSaveMessage('');
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const { db, handleFirestoreError, OperationType } = await import('../lib/firebase');
+      try {
+        await setDoc(doc(db, 'settings', 'productText'), productText);
+        setProductTextSaveMessage('Product texts saved successfully!');
+        setTimeout(() => setProductTextSaveMessage(''), 3000);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'settings');
+      }
+    } catch (err: any) {
+      setProductTextSaveMessage('Error saving product text: ' + err.message);
+    } finally {
+      setIsSavingProductText(false);
     }
   };
 
@@ -594,6 +629,14 @@ export function AdminDashboard() {
         >
           Social Links
         </button>
+        <button
+          onClick={() => setActiveAdminTab('productText')}
+          className={`pb-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors border-b-2 ${
+            activeAdminTab === 'productText' ? 'border-white text-white' : 'border-transparent text-zinc-600 hover:text-zinc-300'
+          }`}
+        >
+          Product Text
+        </button>
       </div>
 
       {activeAdminTab === 'social' && (
@@ -644,6 +687,54 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {activeAdminTab === 'productText' && (
+        <div className="max-w-2xl">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold uppercase tracking-[0.2em] mb-2">Product Texts</h2>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest leading-relaxed">
+              Manage the descriptions for Shipping & Returns and Materials & Care on the product pages.
+            </p>
+          </div>
+
+          {productTextSaveMessage && (
+            <div className={`mb-6 p-4 text-xs font-bold uppercase tracking-widest border ${productTextSaveMessage.includes('Error') ? 'bg-red-950/20 border-red-900/50 text-red-400' : 'bg-green-950/20 border-green-900/50 text-green-400'}`}>
+              {productTextSaveMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProductText} className="space-y-6 bg-zinc-900/30 border border-zinc-800 p-8">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Shipping & Returns</label>
+              <textarea 
+                rows={5}
+                value={productText.shippingReturns} 
+                onChange={e => setProductText({...productText, shippingReturns: e.target.value})} 
+                placeholder="Shipping and return policies..."
+                className="w-full bg-black border border-zinc-800 text-white rounded-md p-3 text-sm focus:border-white focus:outline-none focus:ring-0 transition-colors resize-y" 
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Materials & Care</label>
+              <textarea 
+                rows={5}
+                value={productText.materialsCare} 
+                onChange={e => setProductText({...productText, materialsCare: e.target.value})} 
+                placeholder="Materials and care instructions..."
+                className="w-full bg-black border border-zinc-800 text-white rounded-md p-3 text-sm focus:border-white focus:outline-none focus:ring-0 transition-colors resize-y" 
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={isSavingProductText}
+              className="w-full bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-[10px] h-12"
+            >
+              {isSavingProductText ? 'Saving...' : 'Save texts'}
+            </Button>
+          </form>
+        </div>
+      )}
+
       {activeAdminTab === 'products' && (
         <>
           <div className="mb-6 flex justify-between items-center">
@@ -673,7 +764,7 @@ export function AdminDashboard() {
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="w-10 h-10 flex-shrink-0 bg-zinc-900 mr-4 border border-zinc-800">
-                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover grayscale" />
+                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                           </div>
                           <div className="font-medium text-sm tracking-wider uppercase">{p.name}</div>
                         </div>

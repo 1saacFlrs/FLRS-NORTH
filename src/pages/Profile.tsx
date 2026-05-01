@@ -267,7 +267,9 @@ export function Profile() {
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Total</p>
-                            <p className="text-xs font-bold text-white translate-no" translate="no">${order.total.toFixed(2)} MXN</p>
+                            <p className="text-xs font-bold text-white translate-no" translate="no">
+                              ${(order.subtotal ? order.total : ((order.subtotal ?? order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)) + (order.shippingCost ?? (order.items.reduce((sum, item) => sum + item.quantity, 0) >= 3 ? 0 : 35)))).toFixed(2)} MXN
+                            </p>
                           </div>
                           <div>
                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Status</p>
@@ -324,7 +326,7 @@ export function Profile() {
                           {order.items.map((item, idx) => (
                             <div key={idx} className="flex gap-3 items-center min-w-[200px] snap-start shrink-0">
                               <div className="w-12 h-16 bg-zinc-900 flex-shrink-0">
-                                 <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover grayscale" />
+                                 <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] uppercase tracking-widest text-zinc-300 mb-1 truncate">{item.name}</p>

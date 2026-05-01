@@ -48,7 +48,7 @@ export function Invoice() {
   const handleWhatsApp = () => {
     if (!providerInfo?.phone) return;
     const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price.toFixed(2)} MXN`).join('%0A');
-    const text = `Hello! I would like to proceed with Order #${order.id}.%0A%0AItems:%0A${itemsList}%0A%0ATotal: $${order.total.toFixed(2)} MXN`;
+    const text = `Hello! I would like to proceed with Order #${order.id}.%0A%0AItems:%0A${itemsList}%0A%0ATotal: $${computedTotal.toFixed(2)} MXN`;
     const phone = providerInfo.phone.replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
@@ -57,7 +57,7 @@ export function Invoice() {
     if (!providerInfo?.email) return;
     const itemsList = order.items.map(item => `- ${item.quantity}x ${item.name} (Size: ${item.size}) - $${item.price.toFixed(2)} MXN`).join('\n');
     const subject = encodeURIComponent(`Order Inquiry #${order.id}`);
-    const body = encodeURIComponent(`Hello!\n\nI would like to proceed with Order #${order.id}.\n\nItems:\n${itemsList}\n\nTotal: $${order.total.toFixed(2)} MXN\n\nPlease let me know how to proceed with payment and shipping.\n\nThank you!`);
+    const body = encodeURIComponent(`Hello!\n\nI would like to proceed with Order #${order.id}.\n\nItems:\n${itemsList}\n\nTotal: $${computedTotal.toFixed(2)} MXN\n\nPlease let me know how to proceed with payment and shipping.\n\nThank you!`);
     window.location.href = `mailto:${providerInfo.email}?subject=${subject}&body=${body}`;
   };
 
@@ -111,9 +111,9 @@ export function Invoice() {
             <h3 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">Order Items</h3>
             ${itemsHtml}
             <div style="text-align: right; margin-top: 20px;">
-              <p style="margin: 0; font-size: 12px; text-transform: uppercase; color: #555;">Subtotal: $${(order.subtotal || order.total).toFixed(2)} MXN</p>
-              <p style="margin: 5px 0 10px 0; font-size: 12px; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px;">Shipping: ${order.shippingCost === 0 ? 'FREE' : (order.shippingCost ? `$${order.shippingCost.toFixed(2)} MXN` : 'FREE')}</p>
-              <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">Total: $${order.total.toFixed(2)} MXN</h2>
+              <p style="margin: 0; font-size: 12px; text-transform: uppercase; color: #555;">Subtotal: $${computedSubtotal.toFixed(2)} MXN</p>
+              <p style="margin: 5px 0 10px 0; font-size: 12px; text-transform: uppercase; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px;">Shipping: ${computedShipping === 0 ? 'FREE' : `$${computedShipping.toFixed(2)} MXN`}</p>
+              <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">Total: $${computedTotal.toFixed(2)} MXN</h2>
             </div>
           </div>
           
@@ -224,16 +224,16 @@ export function Invoice() {
         <div className="mt-8 flex justify-end">
           <div className="w-full sm:w-1/2 md:w-1/3">
             <div className="flex justify-between text-xs tracking-widest uppercase mb-2">
-              <span className="text-zinc-500">Subtotal</span>
-              <span className="translate-no" translate="no">${(order.subtotal || order.total).toFixed(2)} MXN</span>
+               <span className="text-zinc-500">Subtotal</span>
+               <span className="translate-no" translate="no">${computedSubtotal.toFixed(2)} MXN</span>
             </div>
             <div className="flex justify-between text-xs tracking-widest uppercase mb-4 border-b border-zinc-800 pb-4">
-              <span className="text-zinc-500">Shipping</span>
-              <span>{order.shippingCost === 0 ? 'FREE' : (order.shippingCost ? `$${order.shippingCost.toFixed(2)} MXN` : 'FREE')}</span>
+               <span className="text-zinc-500">Shipping</span>
+               <span>{computedShipping === 0 ? 'FREE' : `$${computedShipping.toFixed(2)} MXN`}</span>
             </div>
             <div className="flex justify-between font-bold text-lg uppercase tracking-widest">
-              <span>Total</span>
-              <span className="translate-no" translate="no">${order.total.toFixed(2)} MXN</span>
+               <span>Total</span>
+               <span className="translate-no" translate="no">${computedTotal.toFixed(2)} MXN</span>
             </div>
           </div>
         </div>

@@ -87,7 +87,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 {results.map((product) => (
                   <Link key={product.id} to={`/product/${product.id}`} onClick={onClose} className="group block">
                     <div className="aspect-[3/4] bg-zinc-900 overflow-hidden mb-3">
-                      <img src={product.imageUrl} alt={product.name} loading="lazy" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                      <img src={product.imageUrl} alt={product.name} loading="lazy" className="w-full h-full object-cover transition-all duration-500" />
                     </div>
                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{product.category}</p>
                     <p className="text-sm font-medium truncate">{product.name}</p>

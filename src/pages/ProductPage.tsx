@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProductById, Product } from '../lib/api';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useCartStore } from '../store/useCartStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { Button } from '../components/ui/button';
@@ -15,6 +17,7 @@ export function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+  const [productText, setProductText] = useState({ shippingReturns: '', materialsCare: '' });
   const addItem = useCartStore(state => state.addItem);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
 
@@ -33,7 +36,24 @@ export function ProductPage() {
         setLoading(false);
       }
     };
+    
+    const fetchProductText = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'productText'));
+        if (snap.exists()) {
+          const data = snap.data();
+          setProductText({
+            shippingReturns: data.shippingReturns || '',
+            materialsCare: data.materialsCare || ''
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching product text:", err);
+      }
+    };
+
     fetchProduct();
+    fetchProductText();
   }, [id]);
 
   const getSizeStock = (size: string) => {
@@ -125,9 +145,9 @@ export function ProductPage() {
                 return (
                   <div key={idx} className="w-full h-full shrink-0 snap-start relative">
                     {isVideo ? (
-                      <video src={media} autoPlay loop muted playsInline className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700" />
+                      <video src={media} autoPlay loop muted playsInline className="w-full h-full object-cover object-center transition-all duration-700" />
                     ) : (
-                      <img src={media} alt={`${product.name} display ${idx + 1}`} className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700" />
+                      <img src={media} alt={`${product.name} display ${idx + 1}`} className="w-full h-full object-cover object-center transition-all duration-700" />
                     )}
                   </div>
                 );
@@ -242,18 +262,28 @@ export function ProductPage() {
           <div className="mt-12 border-t border-zinc-800 divide-y divide-zinc-800 text-sm">
             <div className="py-4">
               <h4 className="font-bold uppercase tracking-[0.2em] mb-4 text-white">Shipping & Returns</h4>
-              <p className="text-zinc-500 font-light text-xs mb-3">
-                <strong className="text-zinc-400 font-medium tracking-wide">Envíos / Shipping:</strong><br/>
-                Envío gratuito en compras de 3 o más productos. Para pedidos menores, el costo de envío es de $35 MXN.
-              </p>
-              <p className="text-zinc-500 font-light text-xs">
-                <strong className="text-zinc-400 font-medium tracking-wide">Devoluciones / Returns:</strong><br/>
-                Sólo se aceptan devoluciones por artículos dañados. Todos nuestros productos atraviesan una rigurosa inspección de calidad previa a su envío.
-              </p>
+              {productText.shippingReturns ? (
+                <p className="text-zinc-500 font-light text-xs whitespace-pre-wrap">{productText.shippingReturns}</p>
+              ) : (
+                <>
+                  <p className="text-zinc-500 font-light text-xs mb-3">
+                    <strong className="text-zinc-400 font-medium tracking-wide">Envíos / Shipping:</strong><br/>
+                    Envío gratuito en compras de 3 o más productos. Para pedidos menores, el costo de envío es de $35 MXN.
+                  </p>
+                  <p className="text-zinc-500 font-light text-xs">
+                    <strong className="text-zinc-400 font-medium tracking-wide">Devoluciones / Returns:</strong><br/>
+                    Sólo se aceptan devoluciones por artículos dañados. Todos nuestros productos atraviesan una rigurosa inspección de calidad previa a su envío.
+                  </p>
+                </>
+              )}
             </div>
             <div className="py-4">
               <h4 className="font-bold uppercase tracking-[0.2em] mb-2 text-white">Materials & Care</h4>
-              <p className="text-zinc-500 font-light text-xs">100% Premium Heavyweight Cotton. Wash cold, lay flat to dry to prevent shrinkage.</p>
+              {productText.materialsCare ? (
+                <p className="text-zinc-500 font-light text-xs whitespace-pre-wrap">{productText.materialsCare}</p>
+              ) : (
+                <p className="text-zinc-500 font-light text-xs">100% Premium Heavyweight Cotton. Wash cold, lay flat to dry to prevent shrinkage.</p>
+              )}
             </div>
           </div>
         </div>
