@@ -24,6 +24,7 @@ export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
           <img 
             src={product.imageUrl} 
             alt={product.name}
+            loading="lazy"
             className="w-full h-full object-cover object-center grayscale group-hover:grayscale-0 transition-transform duration-700 group-hover:scale-105"
           />
         </div>

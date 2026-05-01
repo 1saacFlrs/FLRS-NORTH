@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Layout } from './Layout';
 import { Home } from './pages/Home';
 import { Shop } from './pages/Shop';
@@ -19,9 +20,18 @@ import { Profile } from './pages/Profile';
 import { ApplyAdmin } from './pages/ApplyAdmin';
 import { AuthSync } from './components/AuthSync';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthSync />
       <Layout>
         <Routes>

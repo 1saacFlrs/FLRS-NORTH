@@ -48,10 +48,12 @@ export function Footer() {
                 className="w-full h-full object-contain animate-spin-3d"
                 style={{ mixBlendMode: 'lighten' }}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo.jpg';
-                  (e.target as HTMLImageElement).onerror = (errEvent) => {
-                    (errEvent.target as HTMLImageElement).style.display = 'none';
-                    const parent = (errEvent.target as HTMLImageElement).parentElement;
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/logo.jpg';
+                  target.onerror = (errEvent: Event | string) => {
+                    const errTarget = (typeof errEvent === 'object' && 'target' in errEvent ? errEvent.target : target) as HTMLImageElement;
+                    errTarget.style.display = 'none';
+                    const parent = errTarget.parentElement;
                     if (parent && !parent.querySelector('.fallback-text')) {
                       const fallback = document.createElement('div');
                       fallback.className = 'fallback-text w-full h-full flex items-center justify-center text-4xl md:text-5xl font-black italic tracking-tighter uppercase animate-spin-3d text-white/50 text-center leading-[0.8]';

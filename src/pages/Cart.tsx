@@ -227,8 +227,8 @@ export function Cart() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de casa</label>
-                  <Input required value={customerData.reference} onChange={e => setCustomerData({...customerData, reference: e.target.value})} placeholder="Color, portón, etc." className="bg-black border-zinc-800 text-white" />
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de Domicilio (Opcional)</label>
+                  <Input value={customerData.reference} onChange={e => setCustomerData({...customerData, reference: e.target.value})} placeholder="Color, portón, etc." className="bg-black border-zinc-800 text-white" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

@@ -209,8 +209,8 @@ export function Profile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de la casa</label>
-                    <Input required value={shippingInfo.reference} onChange={e => setShippingInfo({...shippingInfo, reference: e.target.value})} placeholder="Color de casa, portón, de 2 pisos, etc." className="bg-black border-zinc-800 text-white" />
+                    <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">Referencia de Domicilio (Opcional)</label>
+                    <Input value={shippingInfo.reference} onChange={e => setShippingInfo({...shippingInfo, reference: e.target.value})} placeholder="Color, portón, etc." className="bg-black border-zinc-800 text-white" />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>

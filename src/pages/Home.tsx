@@ -38,7 +38,7 @@ export function Home() {
             className="text-6xl md:text-8xl font-black tracking-tighter uppercase italic text-white"
             translate="no"
           >
-            For Life, Real Style
+            For <span translate="no">Life, Real Style</span>
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}

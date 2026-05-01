@@ -44,6 +44,8 @@ export function ProductPage() {
     return product.stock !== undefined ? product.stock : 0;
   };
 
+  const [added, setAdded] = useState(false);
+
   const handleAddToCart = () => {
     if (!product || !selectedSize || getSizeStock(selectedSize) <= 0) return;
     
@@ -55,7 +57,8 @@ export function ProductPage() {
       size: selectedSize
     });
     
-    alert("Added to cart!");
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   const isFav = product ? isFavorite(product.id!) : false;
@@ -231,9 +234,9 @@ export function ProductPage() {
             onClick={handleAddToCart}
             size="lg" 
             className="w-full py-6 text-xs uppercase tracking-widest font-bold rounded-none bg-white text-black hover:bg-zinc-200 disabled:opacity-50"
-            disabled={!selectedSize || isCurrentSelectionOutOfStock}
+            disabled={!selectedSize || isCurrentSelectionOutOfStock || added}
           >
-            {isCurrentSelectionOutOfStock ? 'Sold Out' : (selectedSize ? 'Add to Cart' : 'Select a Size')}
+            {added ? 'Added to Cart ✓' : (isCurrentSelectionOutOfStock ? 'Sold Out' : (selectedSize ? 'Add to Cart' : 'Select a Size'))}
           </Button>
 
           <div className="mt-12 border-t border-zinc-800 divide-y divide-zinc-800 text-sm">
